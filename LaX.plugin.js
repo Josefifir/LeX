@@ -1,13 +1,16 @@
 /**
  * @name LaX
  * @version 1.0.0
- *
  * @author Nothing
  * @authorId 1278640580607479851
  * @description Creates and send LaX math equations. 
- * Required dependency: ZeresPluginLibrary
- *
+ * Required dependency: ZeresPluginLibrary.
+ * Supported functions can be found at https://katex.org/docs/supported.html.
+ * DM the author or create an issue for support.
+ * @source https://github.com/Josefifir/LeX/blob/main/LaX.plugin.js
+ * @UpdateURL https://raw.githubusercontent.com/Josefifir/TeX/TeX.plugin.js
  */
+
 /*
 MIT License
  
