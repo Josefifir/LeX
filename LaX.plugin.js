@@ -27359,6 +27359,7 @@ class TeX {
     BdApi.DOM.removeStyle(this.constructor.name);
     ZeresPluginLibrary?.Patcher?.unpatchAll?.(this.constructor.name);
     this.resetTeXFontColor();
+    this.svgDocument = null
     BdApi.UI.showToast(`${this.constructor.name} has stopped!`);
   }
     // Function to apply the TeX font color
@@ -27411,9 +27412,7 @@ class TeX {
     BdApi.UI.showChangelogModal({
       title: `${this.constructor.name} v${this.config?.info.version} Changelog`,
       subtitle: "Now with 100% more magic! ✨",
-      blurb: "Thank you for updating! Here's what's new:",
-      banner: "https://example.com/myplugin-banner.png",
-      video: "https://youtu.be/dQw4w9WgXcQ", // Optional YouTube video
+      blurb: "**Thank you for updating! Here's what's new:**",
       changes: [
         {
           title: "New Features",
@@ -27481,7 +27480,7 @@ class TeX {
     const image = new Image();
     image.src = svgData;
     await image.decode();
-    canvas.getContext("2d").drawImage(image, 0, 0);
+    canvas.getContext("2d").drawImage(image, 1, 1);
   }
   async generateTeXImage() {
     const renderTarget = document.createElement("div");
