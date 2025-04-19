@@ -27254,25 +27254,6 @@ class TeX {
         return BdApi.UI.showToast(`${this.constructor.name}: "ZeresPluginLibrary" was not downloaded, or the download failed. This plugin cannot start.`, { type: "error" });
       }
     }
-
-    
-    //window.
-    // if (typeof Algebrite === "undefined") {
-    //   console.log("Algebrite is undefined")
-    //   const Algebrite = window.Algebrite;
-    // } else {
-    //   console.log("Algebrite is defined");
-    //   console.log(`expand((x + y)^2 = ${Algebrite.run('expand((x + y)^2)')}`)
-    // }
-    // const Algebrite = window.Algebrite;
-    // console.log(`expand((x + y)^2 = ${run('expand((x + y)^2)')}`)
-
-    // console.log(math.sqrt(-4).toString()); // "2i"
-    // console.log(math.evaluate("1.2 * (2 + 4.5)")); // 7.8
-
-
-
-
     BdApi.DOM.addStyle(this.constructor.name, css);
     this.texButton = createTeXButton({
       onClick: () => this.showTeXModal()
