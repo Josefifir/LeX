@@ -8,7 +8,7 @@
  * Supported functions can be found at https://katex.org/docs/supported.html.
  * DM the author or create an issue for support.
  * @source https://github.com/Josefifir/LeX/blob/main/LaX.plugin.js
- * @UpdateURL https://raw.githubusercontent.com/Josefifir/TeX/TeX.plugin.js
+ * @UpdateURL https://raw.githubusercontent.com/Josefifir/LeX/refs/heads/main/LaX.plugin.js
  */
 
 /*
@@ -27193,7 +27193,7 @@ class TeX {
           version: "1.0.0",
           description: "Creates and sends TeX math equations.",
           github: "https://github.com/Josefifir/TeX",
-          github_raw: "https://raw.githubusercontent.com/Josefifir/TeX/TeX.plugin.js"
+          github_raw: "https://raw.githubusercontent.com/Josefifir/LeX/refs/heads/main/LaX.plugin.js"
       },
       defaultConfig: [
           {
