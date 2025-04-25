@@ -1,6 +1,5 @@
 # LeX
 Creates and send LaX math equations. 
- * Required dependency: ZeresPluginLibrary.
  * Supported functions can be found at https://katex.org/docs/supported.html.
  * DM the author or create an issue for support.
 
