@@ -269,18 +269,11 @@ var Settings = /*#__PURE__*/function () {
     this.strict = utils.deflt(options.strict, "warn");
     this.trust = utils.deflt(options.trust, false);
     this.maxSize = Math.max(0, utils.deflt(options.maxSize, Infinity));
-    this.maxExpand = Math.max(0, utils.deflt(options.maxExpand, Infinity));
+    this.maxExpand = Math.max(0, utils.deflt(options.maxExpand, 1000));
     this.globalGroup = utils.deflt(options.globalGroup, false);
-      // Add device pixel ratio scaling
     this.pixelRatio = window.devicePixelRatio || 2.5; // Boost for high-DPI
     this.sizeMultiplier = 1.5;      // Match scaling factor
     this.maxSize = Infinity;        // Disable size limits
-    // this.minRuleThickness = 0.08;   // Scaled from default 0.04
-    this.maxExpand = Math.max(0, utils.deflt(options.maxExpand, Infinity)); // Increase if needed
-    this.maxWidth = utils.deflt(options.maxWidth, Infinity); 
-    this.minRuleThickness = 0.08 * 1.5; // Original: 0.04
-
-
   }
   /**
    * Report nonstrict (non-LaTeX-compatible) input.
@@ -289,10 +282,7 @@ var Settings = /*#__PURE__*/function () {
 
 
   var _proto = Settings.prototype;
-  _proto.adjustForDPI = function() {
-    this.pixelRatio = Math.max(1.9, window.devicePixelRatio || 1);
-    this.minRuleThickness = 0.08 * this.pixelRatio;
-  };
+
   _proto.reportNonstrict = function reportNonstrict(errorCode, errorMsg, token) {
     var strict = this.strict;
 
@@ -486,7 +476,7 @@ var _text = [D, Dc, T, Tc, T, Tc, T, Tc]; // We only export some of the styles.
   DISPLAY: styles[D],
   TEXT: styles[T],
   SCRIPT: styles[S],
-  SCRIPTSCRIPT: styles[SSc]
+  SCRIPTSCRIPT: styles[SS]
 });
 ;// CONCATENATED MODULE: ./src/unicodeScripts.js
 /*
@@ -632,123 +622,134 @@ var hLinePad = 80; // padding above a sqrt viniculum. Prevents image cropping.
      / /\
     / / surd
 */
+
+function memoizePathGenerator(generator) {
+  const cache = new Map();
+  
+  return (...args) => {
+    const key = args.join('|');
+    if (cache.has(key)) {
+      return cache.get(key);
+    }
+    
+    const result = generator(...args);
+    cache.set(key, result);
+    return result;
+  };
+}
+
 function scaleSvgPath(pathData, scale) {
   return pathData.replace(/([0-9.]+)/g, (match) => parseFloat(match) * scale);
 }
 
-var sqrtMain = function sqrtMain(extraViniculum, hLinePad) {
-  // sqrtMain path geometry is from glyph U221A in the font KaTeX Main
-  return "M95," + (622 + extraViniculum + hLinePad) + "\nc-2.7,0,-7.17,-2.7,-13.5,-8c-5.8,-5.3,-9.5,-10,-9.5,-14\nc0,-2,0.3,-3.3,1,-4c1.3,-2.7,23.83,-20.7,67.5,-54\nc44.2,-33.3,65.8,-50.3,66.5,-51c1.3,-1.3,3,-2,5,-2c4.7,0,8.7,3.3,12,10\ns173,378,173,378c0.7,0,35.3,-71,104,-213c68.7,-142,137.5,-285,206.5,-429\nc69,-144,104.5,-217.7,106.5,-221\nl" + extraViniculum / 2.075 + " -" + extraViniculum + "\nc5.3,-9.3,12,-14,20,-14\nH400000v" + (40 + extraViniculum) + "H845.2724\ns-225.272,467,-225.272,467s-235,486,-235,486c-2.7,4.7,-9,7,-19,7\nc-6,0,-10,-1,-12,-3s-194,-422,-194,-422s-65,47,-65,47z\nM" + (834 + extraViniculum) + " " + hLinePad + "h400000v" + (40 + extraViniculum) + "h-400000z";
-};
+const sqrtMain = memoizePathGenerator((extraViniculum, hLinePad) => {
+  return `M95,${622 + extraViniculum + hLinePad}
+c-2.7,0,-7.17,-2.7,-13.5,-8c-5.8,-5.3,-9.5,-10,-9.5,-14
+c0,-2,0.3,-3.3,1,-4c1.3,-2.7,23.83,-20.7,67.5,-54
+c44.2,-33.3,65.8,-50.3,66.5,-51c1.3,-1.3,3,-2,5,-2c4.7,0,8.7,3.3,12,10
+s173,378,173,378c0.7,0,35.3,-71,104,-213c68.7,-142,137.5,-285,206.5,-429
+c69,-144,104.5,-217.7,106.5,-221
+l${extraViniculum / 2.075} -${extraViniculum}
+c5.3,-9.3,12,-14,20,-14
+H400000v${40 + extraViniculum}H845.2724
+s-225.272,467,-225.272,467s-235,486,-235,486c-2.7,4.7,-9,7,-19,7
+c-6,0,-10,-1,-12,-3s-194,-422,-194,-422s-65,47,-65,47z
+M${834 + extraViniculum} ${hLinePad}h400000v${40 + extraViniculum}h-400000z`;
+});
 
-var sqrtMain = function sqrtMain(extraViniculum, hLinePad) {
-  // sqrtMain path geometry is from glyph U221A in the font KaTeX Main
-  return "M95," + (622 + extraViniculum + hLinePad) + "\nc-2.7,0,-7.17,-2.7,-13.5,-8c-5.8,-5.3,-9.5,-10,-9.5,-14\nc0,-2,0.3,-3.3,1,-4c1.3,-2.7,23.83,-20.7,67.5,-54\nc44.2,-33.3,65.8,-50.3,66.5,-51c1.3,-1.3,3,-2,5,-2c4.7,0,8.7,3.3,12,10\ns173,378,173,378c0.7,0,35.3,-71,104,-213c68.7,-142,137.5,-285,206.5,-429\nc69,-144,104.5,-217.7,106.5,-221\nl" + extraViniculum / 2.075 + " -" + extraViniculum + "\nc5.3,-9.3,12,-14,20,-14\nH400000v" + (40 + extraViniculum) + "H845.2724\ns-225.272,467,-225.272,467s-235,486,-235,486c-2.7,4.7,-9,7,-19,7\nc-6,0,-10,-1,-12,-3s-194,-422,-194,-422s-65,47,-65,47z\nM" + (834 + extraViniculum) + " " + hLinePad + "h400000v" + (40 + extraViniculum) + "h-400000z";
-};
+const sqrtSize1 = memoizePathGenerator((extraViniculum, hLinePad) => {
+  return `M263,${601 + extraViniculum + hLinePad}c0.7,0,18,39.7,52,119
+c34,79.3,68.167,158.7,102.5,238c34.3,79.3,51.8,119.3,52.5,120
+c340,-704.7,510.7,-1060.3,512,-1067
+l${extraViniculum / 2.084} -${extraViniculum}
+c4.7,-7.3,11,-11,19,-11
+H40000v${40 + extraViniculum}H1012.3
+s-271.3,567,-271.3,567c-38.7,80.7,-84,175,-136,283c-52,108,-89.167,185.3,-111.5,232
+c-22.3,46.7,-33.8,70.3,-34.5,71c-4.7,4.7,-12.3,7,-23,7s-12,-1,-12,-1
+s-109,-253,-109,-253c-72.7,-168,-109.3,-252,-110,-252c-10.7,8,-22,16.7,-34,26
+c-22,17.3,-33.3,26,-34,26s-26,-26,-26,-26s76,-59,76,-59s76,-60,76,-60z
+M${1001 + extraViniculum} ${hLinePad}h400000v${40 + extraViniculum}h-400000z`;
+});
 
-var sqrtSize1 = function sqrtSize1(extraViniculum, hLinePad) {
-  // size1 is from glyph U221A in the font KaTeX_Size1-Regular
-  return "M263," + (601 + extraViniculum + hLinePad) + "c0.7,0,18,39.7,52,119\nc34,79.3,68.167,158.7,102.5,238c34.3,79.3,51.8,119.3,52.5,120\nc340,-704.7,510.7,-1060.3,512,-1067\nl" + extraViniculum / 2.084 + " -" + extraViniculum + "\nc4.7,-7.3,11,-11,19,-11\nH40000v" + (40 + extraViniculum) + "H1012.3\ns-271.3,567,-271.3,567c-38.7,80.7,-84,175,-136,283c-52,108,-89.167,185.3,-111.5,232\nc-22.3,46.7,-33.8,70.3,-34.5,71c-4.7,4.7,-12.3,7,-23,7s-12,-1,-12,-1\ns-109,-253,-109,-253c-72.7,-168,-109.3,-252,-110,-252c-10.7,8,-22,16.7,-34,26\nc-22,17.3,-33.3,26,-34,26s-26,-26,-26,-26s76,-59,76,-59s76,-60,76,-60z\nM" + (1001 + extraViniculum) + " " + hLinePad + "h400000v" + (40 + extraViniculum) + "h-400000z";
-};
-
-var sqrtSize2 = function sqrtSize2(extraViniculum, hLinePad) {
+var sqrtSize2 = memoizePathGenerator((extraViniculum, hLinePad) => {
   // size2 is from glyph U221A in the font KaTeX_Size2-Regular
   return "M983 " + (10 + extraViniculum + hLinePad) + "\nl" + extraViniculum / 3.13 + " -" + extraViniculum + "\nc4,-6.7,10,-10,18,-10 H400000v" + (40 + extraViniculum) + "\nH1013.1s-83.4,268,-264.1,840c-180.7,572,-277,876.3,-289,913c-4.7,4.7,-12.7,7,-24,7\ns-12,0,-12,0c-1.3,-3.3,-3.7,-11.7,-7,-25c-35.3,-125.3,-106.7,-373.3,-214,-744\nc-10,12,-21,25,-33,39s-32,39,-32,39c-6,-5.3,-15,-14,-27,-26s25,-30,25,-30\nc26.7,-32.7,52,-63,76,-91s52,-60,52,-60s208,722,208,722\nc56,-175.3,126.3,-397.3,211,-666c84.7,-268.7,153.8,-488.2,207.5,-658.5\nc53.7,-170.3,84.5,-266.8,92.5,-289.5z\nM" + (1001 + extraViniculum) + " " + hLinePad + "h400000v" + (40 + extraViniculum) + "h-400000z";
-};
+});
 
-var sqrtSize3 = function sqrtSize3(extraViniculum, hLinePad) {
+var sqrtSize3 = memoizePathGenerator((extraViniculum, hLinePad) => {
   // size3 is from glyph U221A in the font KaTeX_Size3-Regular
   return "M424," + (2398 + extraViniculum + hLinePad) + "\nc-1.3,-0.7,-38.5,-172,-111.5,-514c-73,-342,-109.8,-513.3,-110.5,-514\nc0,-2,-10.7,14.3,-32,49c-4.7,7.3,-9.8,15.7,-15.5,25c-5.7,9.3,-9.8,16,-12.5,20\ns-5,7,-5,7c-4,-3.3,-8.3,-7.7,-13,-13s-13,-13,-13,-13s76,-122,76,-122s77,-121,77,-121\ns209,968,209,968c0,-2,84.7,-361.7,254,-1079c169.3,-717.3,254.7,-1077.7,256,-1081\nl" + extraViniculum / 4.223 + " -" + extraViniculum + "c4,-6.7,10,-10,18,-10 H400000\nv" + (40 + extraViniculum) + "H1014.6\ns-87.3,378.7,-272.6,1166c-185.3,787.3,-279.3,1182.3,-282,1185\nc-2,6,-10,9,-24,9\nc-8,0,-12,-0.7,-12,-2z M" + (1001 + extraViniculum) + " " + hLinePad + "\nh400000v" + (40 + extraViniculum) + "h-400000z";
-};
+});
 
-var sqrtSize4 = function sqrtSize4(extraViniculum, hLinePad) {
+var sqrtSize4 =  memoizePathGenerator((extraViniculum, hLinePad) => {
   // size4 is from glyph U221A in the font KaTeX_Size4-Regular
   return "M473," + (2713 + extraViniculum + hLinePad) + "\nc339.3,-1799.3,509.3,-2700,510,-2702 l" + extraViniculum / 5.298 + " -" + extraViniculum + "\nc3.3,-7.3,9.3,-11,18,-11 H400000v" + (40 + extraViniculum) + "H1017.7\ns-90.5,478,-276.2,1466c-185.7,988,-279.5,1483,-281.5,1485c-2,6,-10,9,-24,9\nc-8,0,-12,-0.7,-12,-2c0,-1.3,-5.3,-32,-16,-92c-50.7,-293.3,-119.7,-693.3,-207,-1200\nc0,-1.3,-5.3,8.7,-16,30c-10.7,21.3,-21.3,42.7,-32,64s-16,33,-16,33s-26,-26,-26,-26\ns76,-153,76,-153s77,-151,77,-151c0.7,0.7,35.7,202,105,604c67.3,400.7,102,602.7,104,\n606zM" + (1001 + extraViniculum) + " " + hLinePad + "h400000v" + (40 + extraViniculum) + "H1017.7z";
-};
+});
 
-var phasePath = function phasePath(y) {
-  var x = y / 2; // x coordinate at top of angle
+const sqrtTall = memoizePathGenerator((extraViniculum, hLinePad, viewBoxHeight) => {
+  const vertSegment = viewBoxHeight - 54 - hLinePad - extraViniculum;
+  return `M702 ${extraViniculum + hLinePad}H400000${40 + extraViniculum}
+H742v${vertSegment}l-4 4-4 4c-.667.7 -2 1.5-4 2.5s-4.167 1.833-6.5 2.5-5.5 1-9.5 1
+h-12l-28-84c-16.667-52-96.667 -294.333-240-727l-212 -643 -85 170
+c-4-3.333-8.333-7.667-13 -13l-13-13l77-155 77-156c66 199.333 139 419.667
+219 661 l218 661zM702 ${hLinePad}H400000v${40 + extraViniculum}H742z`;
+});
 
-  return "M400000 " + y + " H0 L" + x + " 0 l65 45 L145 " + (y - 80) + " H400000z";
-};
-
-var sqrtTall = function sqrtTall(extraViniculum, hLinePad, viewBoxHeight) {
-  // sqrtTall is from glyph U23B7 in the font KaTeX_Size4-Regular
-  // One path edge has a variable length. It runs vertically from the viniculumn
-  // to a point near (14 units) the bottom of the surd. The viniculum
-  // is normally 40 units thick. So the length of the line in question is:
-  var vertSegment = viewBoxHeight - 54 - hLinePad - extraViniculum;
-  return "M702 " + (extraViniculum + hLinePad) + "H400000" + (40 + extraViniculum) + "\nH742v" + vertSegment + "l-4 4-4 4c-.667.7 -2 1.5-4 2.5s-4.167 1.833-6.5 2.5-5.5 1-9.5 1\nh-12l-28-84c-16.667-52-96.667 -294.333-240-727l-212 -643 -85 170\nc-4-3.333-8.333-7.667-13 -13l-13-13l77-155 77-156c66 199.333 139 419.667\n219 661 l218 661zM702 " + hLinePad + "H400000v" + (40 + extraViniculum) + "H742z";
-};
-
+const phasePath = memoizePathGenerator((y) => {
+  const x = y / 2;
+  return `M400000 ${y} H0 L${x} 0 l65 45 L145 ${y - 80} H400000z`;
+});
 // 2. Enhanced sqrtPath function with your switch-case structure
-var sqrtPath = function(size, extraViniculum, viewBoxHeight) {
-  extraViniculum = 1000 * extraViniculum; // Convert from document ems to viewBox.
+function sqrtPath(size, extraViniculum, viewBoxHeight, hLinePad = 0) {
+  const validSizes = new Set([
+    'sqrtMain', 'sqrtSize1', 'sqrtSize2', 
+    'sqrtSize3', 'sqrtSize4', 'sqrtTall'
+  ]);
   
-
-  var path = "";
-
+  if (!validSizes.has(size)) {
+    throw new Error(`Invalid size: ${size}. Must be one of ${[...validSizes].join(', ')}`);
+  }
+  
+  extraViniculum = 1000 * extraViniculum; // Convert from document ems to viewBox
+  
   switch (size) {
-    case "sqrtMain":
-      path = sqrtMain(extraViniculum, hLinePad);
-      break;
-
-    case "sqrtSize1":
-      path = sqrtSize1(extraViniculum, hLinePad);
-      break;
-
-    case "sqrtSize2":
-      path = sqrtSize2(extraViniculum, hLinePad);
-      break;
-
-    case "sqrtSize3":
-      path = sqrtSize3(extraViniculum, hLinePad);
-      break;
-
-    case "sqrtSize4":
-      path = sqrtSize4(extraViniculum, hLinePad);
-      break;
-
-    case "sqrtTall":
-      path = sqrtTall(extraViniculum, hLinePad, viewBoxHeight);
+    case 'sqrtMain': return sqrtMain(extraViniculum, hLinePad);
+    case 'sqrtSize1': return sqrtSize1(extraViniculum, hLinePad);
+    case 'sqrtSize2': return sqrtSize2(extraViniculum, hLinePad);
+    case 'sqrtSize3': return sqrtSize3(extraViniculum, hLinePad);
+    case 'sqrtSize4': return sqrtSize4(extraViniculum, hLinePad);
+    case 'sqrtTall': return sqrtTall(extraViniculum, hLinePad, viewBoxHeight);
+    default: return '';
   }
-
-  return path;
+  
+}
+const innerDelimiterPaths = {
+  '\u239C': (height) => `M291 0 H417 V${height} H291z M291 0 H417 V${height} H291z`,
+  '\u2223': (height) => `M145 0 H188 V${height} H145z M145 0 H188 V${height} H145z`,
+  '\u2225': (height) => 
+    `M145 0 H188 V${height} H145z M145 0 H188 V${height} H145z` + 
+    `M367 0 H410 V${height} H367z M367 0 H410 V${height} H367z`,
+  '\u239F': (height) => `M457 0 H583 V${height} H457z M457 0 H583 V${height} H457z`,
+  '\u23A2': (height) => `M319 0 H403 V${height} H319z M319 0 H403 V${height} H319z`,
+  '\u23A5': (height) => `M263 0 H347 V${height} H263z M263 0 H347 V${height} H263z`,
+  '\u23AA': (height) => `M384 0 H504 V${height} H384z M384 0 H504 V${height} H384z`,
+  '\u23D0': (height) => `M312 0 H355 V${height} H312z M312 0 H355 V${height} H312z`,
+  '\u2016': (height) => 
+    `M257 0 H300 V${height} H257z M257 0 H300 V${height} H257z` + 
+    `M478 0 H521 V${height} H478z M478 0 H521 V${height} H478z`
 };
-var innerPath = function innerPath(name, height) {
-  // The inner part of stretchy tall delimiters
-  switch (name) {
-    case "\u239C":
-      return "M291 0 H417 V" + height + " H291z M291 0 H417 V" + height + " H291z";
 
-    case "\u2223":
-      return "M145 0 H188 V" + height + " H145z M145 0 H188 V" + height + " H145z";
+/**
+ * Gets the inner path for stretchy delimiters
+ * @param {string} name - The delimiter name/character
+ * @param {number} height - The desired height
+ * @returns {string} The generated SVG path
+ */
+function innerPath(name, height) {
+  const generator = innerDelimiterPaths[name];
+  return generator ? generator(height) : '';
+}
 
-    case "\u2225":
-      return "M145 0 H188 V" + height + " H145z M145 0 H188 V" + height + " H145z" + ("M367 0 H410 V" + height + " H367z M367 0 H410 V" + height + " H367z");
-
-    case "\u239F":
-      return "M457 0 H583 V" + height + " H457z M457 0 H583 V" + height + " H457z";
-
-    case "\u23A2":
-      return "M319 0 H403 V" + height + " H319z M319 0 H403 V" + height + " H319z";
-
-    case "\u23A5":
-      return "M263 0 H347 V" + height + " H263z M263 0 H347 V" + height + " H263z";
-
-    case "\u23AA":
-      return "M384 0 H504 V" + height + " H384z M384 0 H504 V" + height + " H384z";
-
-    case "\u23D0":
-      return "M312 0 H355 V" + height + " H312z M312 0 H355 V" + height + " H312z";
-
-    case "\u2016":
-      return "M257 0 H300 V" + height + " H257z M257 0 H300 V" + height + " H257z" + ("M478 0 H521 V" + height + " H478z M478 0 H521 V" + height + " H478z");
-
-    default:
-      return "";
-  }
-};
 var path = {
   // The doubleleftarrow geometry is from glyph U+21D0 in the font KaTeX Main
   doubleleftarrow: "M262 157\nl10-10c34-36 62.7-77 86-123 3.3-8 5-13.3 5-16 0-5.3-6.7-8-20-8-7.3\n 0-12.2.5-14.5 1.5-2.3 1-4.8 4.5-7.5 10.5-49.3 97.3-121.7 169.3-217 216-28\n 14-57.3 25-88 33-6.7 2-11 3.8-13 5.5-2 1.7-3 4.2-3 7.5s1 5.8 3 7.5\nc2 1.7 6.3 3.5 13 5.5 68 17.3 128.2 47.8 180.5 91.5 52.3 43.7 93.8 96.2 124.5\n 157.5 9.3 8 15.3 12.3 18 13h6c12-.7 18-4 18-10 0-2-1.7-7-5-15-23.3-46-52-87\n-86-123l-10-10h399738v-40H218c328 0 0 0 0 0l-10-8c-26.7-20-65.7-43-117-69 2.7\n-2 6-3.7 10-5 36.7-16 72.3-37.3 107-64l10-8h399782v-40z\nm8 0v40h399730v-40zm0 194v40h399730v-40z",
@@ -986,9 +987,8 @@ var _toNode = function toNode(tagName) {
 
 
 var _toMarkup = function toMarkup(tagName) {
-  var markup = "<" + tagName;
-    // Enable high-quality font rendering
-    markup += "style=\"font-size: 1.5em !important;\"";
+  var markup = "<" + tagName; // Add the class
+
   if (this.classes.length) {
     markup += " class=\"" + utils.escape(createClass(this.classes)) + "\"";
   }
@@ -1002,8 +1002,7 @@ var _toMarkup = function toMarkup(tagName) {
   }
 
   if (styles) {
-    // Enable high-quality font rendering
-    markup += " style=\"-webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;\"";
+    markup += " style=\"" + utils.escape(styles) + "\"";
   } // Add the attributes
 
 
@@ -1196,11 +1195,11 @@ var iCombinations = {
 var SymbolNode = /*#__PURE__*/function () {
   function SymbolNode(text, height, depth, italic, skew, width, classes, style) {
     this.text = void 0;
-    this.height = height * 1.5;
-    this.depth = depth * 1.5; 
+    this.height = void 0;
+    this.depth = void 0;
     this.italic = void 0;
     this.skew = void 0;
-    this.width = width * 1.5;   // Scale width
+    this.width = void 0;
     this.maxFontSize = void 0;
     this.classes = void 0;
     this.style = void 0;
@@ -1212,11 +1211,6 @@ var SymbolNode = /*#__PURE__*/function () {
     this.width = width || 0;
     this.classes = classes || [];
     this.style = style || {};
-    this.style["-webkit-font-smoothing"] = "subpixel-antialiased";
-    this.style["font-smooth"] = "always";
-    this.style["text-rendering"] = "optimizeLegibility",
-    this.style["font-size"] = (25 * 1.5) + "px" // Dynamic scaling
-    
     this.maxFontSize = 0; // Mark text from non-Latin scripts with specific classes so that we
     // can specify which fonts to use.  This allows us to render these
     // characters with a serif font in situations where the browser would
@@ -1383,7 +1377,7 @@ var PathNode = /*#__PURE__*/function () {
     this.pathName = void 0;
     this.alternate = void 0;
     this.pathName = pathName;
-    this.alternate = alternate;
+    this.alternate = alternate; // Used only for \sqrt, \phase, & tall delims
   }
 
   var _proto6 = PathNode.prototype;
@@ -1401,9 +1395,12 @@ var PathNode = /*#__PURE__*/function () {
     return node;
   };
 
-  _proto6.toMarkup = function() {
-    return "<path d='" + (this.alternate || scaleSvgPath(path[this.pathName], 2.5)) + 
-           "' stroke-width='" + (1.2 * 2.5) + "'/>"; // Thicker stroke
+  _proto6.toMarkup = function toMarkup() {
+    if (this.alternate) {
+      return "<path d='" + this.alternate + "'/>";
+    } else {
+      return "<path d='" + path[this.pathName] + "'/>";
+    }
   };
 
   return PathNode;
@@ -1460,8 +1457,7 @@ function assertSpan(group) {
 }
 ;// CONCATENATED MODULE: ./src/fontMetricsData.js
 // This file is GENERATED by buildMetrics.sh. DO NOT MODIFY.
-/* harmony default export */
- var OriginalfontMetricsData = ({
+/* harmony default export */ var fontMetricsData = ({
   "AMS-Regular": {
     "32": [0, 0, 0, 0, 0.25],
     "65": [0, 0.68889, 0, 0, 0.72222],
@@ -1719,9 +1715,9 @@ function assertSpan(group) {
     "57368": [0.25142, 0.75726, 0, 0, 0.77778],
     "57369": [0.25142, 0.75726, 0, 0, 0.77778],
     "57370": [0.13597, 0.63597, 0, 0, 0.77778],
-    "57371": [0.13597, 0.63597, 0, 0, 0.77778],
-},
-"Caligraphic-Regular": {
+    "57371": [0.13597, 0.63597, 0, 0, 0.77778]
+  },
+  "Caligraphic-Regular": {
     "32": [0, 0, 0, 0, 0.25],
     "65": [0, 0.68333, 0, 0.19445, 0.79847],
     "66": [0, 0.68333, 0.03041, 0.13889, 0.65681],
@@ -1749,9 +1745,9 @@ function assertSpan(group) {
     "88": [0, 0.68333, 0.14643, 0.13889, 0.7133],
     "89": [0.09722, 0.68333, 0.08222, 0.08334, 0.66834],
     "90": [0, 0.68333, 0.07944, 0.13889, 0.72473],
-    "160": [0, 0, 0, 0, 0.25],
-},
-"Fraktur-Regular": {
+    "160": [0, 0, 0, 0, 0.25]
+  },
+  "Fraktur-Regular": {
     "32": [0, 0, 0, 0, 0.25],
     "33": [0, 0.69141, 0, 0, 0.29574],
     "34": [0, 0.69141, 0, 0, 0.21471],
@@ -1844,9 +1840,9 @@ function assertSpan(group) {
     "58116": [0.18906, 0.47534, 0, 0, 0.50343],
     "58117": [0, 0.69141, 0, 0, 0.33301],
     "58118": [0, 0.62119, 0, 0, 0.33409],
-    "58119": [0, 0.47534, 0, 0, 0.50073],
-},
-"Main-Bold": {
+    "58119": [0, 0.47534, 0, 0, 0.50073]
+  },
+  "Main-Bold": {
     "32": [0, 0, 0, 0, 0.25],
     "33": [0, 0.69444, 0, 0, 0.35],
     "34": [0, 0.69444, 0, 0, 0.60278],
@@ -1855,7 +1851,7 @@ function assertSpan(group) {
     "37": [0.05556, 0.75, 0, 0, 0.95833],
     "38": [0, 0.69444, 0, 0, 0.89444],
     "39": [0, 0.69444, 0, 0, 0.31944],
-    "40": [0.25*2, 0.75*2, 0, 0, 0.44722*2],
+    "40": [0.25, 0.75, 0, 0, 0.44722],
     "41": [0.25, 0.75, 0, 0, 0.44722],
     "42": [0, 0.75, 0, 0, 0.575],
     "43": [0.13333, 0.63333, 0, 0, 0.89444],
@@ -2040,7 +2036,7 @@ function assertSpan(group) {
     "8744": [0, 0.55556, 0, 0, 0.76666],
     "8745": [0, 0.55556, 0, 0, 0.76666],
     "8746": [0, 0.55556, 0, 0, 0.76666],
-    "8747": [0.1, 0.8, 0.11111, 0, 0.41667],
+    "8747": [0.19444, 0.69444, 0.12778, 0, 0.56875],
     "8764": [-0.10889, 0.39111, 0, 0, 0.89444],
     "8768": [0.19444, 0.69444, 0, 0, 0.31944],
     "8771": [0.00222, 0.50222, 0, 0, 0.89444],
@@ -2097,9 +2093,9 @@ function assertSpan(group) {
     "10815": [0, 0.68611, 0, 0, 0.9],
     "10927": [0.19667, 0.69667, 0, 0, 0.89444],
     "10928": [0.19667, 0.69667, 0, 0, 0.89444],
-    "57376": [0.19444, 0.69444, 0, 0, 0],
-},
-"Main-BoldItalic": {
+    "57376": [0.19444, 0.69444, 0, 0, 0]
+  },
+  "Main-BoldItalic": {
     "32": [0, 0, 0, 0, 0.25],
     "33": [0, 0.69444, 0.11417, 0, 0.38611],
     "34": [0, 0.69444, 0.07939, 0, 0.62055],
@@ -2107,7 +2103,7 @@ function assertSpan(group) {
     "37": [0.05556, 0.75, 0.12861, 0, 0.94444],
     "38": [0, 0.69444, 0.08528, 0, 0.88555],
     "39": [0, 0.69444, 0.12945, 0, 0.35555],
-    "40": [0.25*2, 0.75*2, 0.15806*2, 0, 0.47333*2],
+    "40": [0.25, 0.75, 0.15806, 0, 0.47333],
     "41": [0.25, 0.75, 0.03306, 0, 0.47333],
     "42": [0, 0.75, 0.14333, 0, 0.59111],
     "43": [0.10333, 0.60333, 0.03306, 0, 0.88555],
@@ -2226,9 +2222,9 @@ function assertSpan(group) {
     "8216": [0, 0.69444, 0.12945, 0, 0.35555],
     "8217": [0, 0.69444, 0.12945, 0, 0.35555],
     "8220": [0, 0.69444, 0.16772, 0, 0.62055],
-    "8221": [0, 0.69444, 0.07939, 0, 0.62055],
-},
-"Main-Italic": {
+    "8221": [0, 0.69444, 0.07939, 0, 0.62055]
+  },
+  "Main-Italic": {
     "32": [0, 0, 0, 0, 0.25],
     "33": [0, 0.69444, 0.12417, 0, 0.30667],
     "34": [0, 0.69444, 0.06961, 0, 0.51444],
@@ -2354,9 +2350,9 @@ function assertSpan(group) {
     "8217": [0, 0.69444, 0.12417, 0, 0.30667],
     "8220": [0, 0.69444, 0.1685, 0, 0.51444],
     "8221": [0, 0.69444, 0.06961, 0, 0.51444],
-    "8463": [0, 0.68889, 0, 0, 0.54028],
-},
-"Main-Regular": {
+    "8463": [0, 0.68889, 0, 0, 0.54028]
+  },
+  "Main-Regular": {
     "32": [0, 0, 0, 0, 0.25],
     "33": [0, 0.69444, 0, 0, 0.27778],
     "34": [0, 0.69444, 0, 0, 0.5],
@@ -2557,7 +2553,7 @@ function assertSpan(group) {
     "8744": [0, 0.55556, 0, 0, 0.66667],
     "8745": [0, 0.55556, 0, 0, 0.66667],
     "8746": [0, 0.55556, 0, 0, 0.66667],
-    "8747": [0.1, 0.8, 0.11111, 0, 0.41667],
+    "8747": [0.19444, 0.69444, 0.11111, 0, 0.41667],
     "8764": [-0.13313, 0.36687, 0, 0, 0.77778],
     "8768": [0.19444, 0.69444, 0, 0, 0.27778],
     "8771": [-0.03625, 0.46375, 0, 0, 0.77778],
@@ -2632,9 +2628,9 @@ function assertSpan(group) {
     "10815": [0, 0.68333, 0, 0, 0.75],
     "10927": [0.13597, 0.63597, 0, 0, 0.77778],
     "10928": [0.13597, 0.63597, 0, 0, 0.77778],
-    "57376": [0.19444, 0.69444, 0, 0, 0],
-},
-"Math-BoldItalic": {
+    "57376": [0.19444, 0.69444, 0, 0, 0]
+  },
+  "Math-BoldItalic": {
     "32": [0, 0, 0, 0, 0.25],
     "48": [0, 0.44444, 0, 0, 0.575],
     "49": [0, 0.44444, 0, 0, 0.575],
@@ -2741,9 +2737,9 @@ function assertSpan(group) {
     "1009": [0.19444, 0.44444, 0, 0, 0.6118],
     "1013": [0, 0.44444, 0, 0, 0.48333],
     "57649": [0, 0.44444, 0, 0, 0.39352],
-    "57911": [0.19444, 0.44444, 0, 0, 0.43889],
-},
-"Math-Italic": {
+    "57911": [0.19444, 0.44444, 0, 0, 0.43889]
+  },
+  "Math-Italic": {
     "32": [0, 0, 0, 0, 0.25],
     "48": [0, 0.43056, 0, 0, 0.5],
     "49": [0, 0.43056, 0, 0, 0.5],
@@ -2850,9 +2846,9 @@ function assertSpan(group) {
     "1009": [0.19444, 0.43056, 0, 0.08334, 0.51702],
     "1013": [0, 0.43056, 0, 0.05556, 0.4059],
     "57649": [0, 0.43056, 0, 0.02778, 0.32246],
-    "57911": [0.19444, 0.43056, 0, 0.08334, 0.38403],
-},
-"SansSerif-Bold": {
+    "57911": [0.19444, 0.43056, 0, 0.08334, 0.38403]
+  },
+  "SansSerif-Bold": {
     "32": [0, 0, 0, 0, 0.25],
     "33": [0, 0.69444, 0, 0, 0.36667],
     "34": [0, 0.69444, 0, 0, 0.55834],
@@ -2962,7 +2958,7 @@ function assertSpan(group) {
     "923": [0, 0.69444, 0, 0, 0.67223],
     "926": [0, 0.69444, 0, 0, 0.73334],
     "928": [0, 0.69444, 0, 0, 0.79445],
-    "931": [2, 2, 2, 2, 2],
+    "931": [0, 0.69444, 0, 0, 0.79445],
     "933": [0, 0.69444, 0, 0, 0.85556],
     "934": [0, 0.69444, 0, 0, 0.79445],
     "936": [0, 0.69444, 0, 0, 0.85556],
@@ -2972,9 +2968,9 @@ function assertSpan(group) {
     "8216": [0, 0.69444, 0, 0, 0.30556],
     "8217": [0, 0.69444, 0, 0, 0.30556],
     "8220": [0, 0.69444, 0, 0, 0.55834],
-    "8221": [0, 0.69444, 0, 0, 0.55834],
-},
-"SansSerif-Italic": {
+    "8221": [0, 0.69444, 0, 0, 0.55834]
+  },
+  "SansSerif-Italic": {
     "32": [0, 0, 0, 0, 0.25],
     "33": [0, 0.69444, 0.05733, 0, 0.31945],
     "34": [0, 0.69444, 0.00316, 0, 0.5],
@@ -3095,9 +3091,9 @@ function assertSpan(group) {
     "8216": [0, 0.69444, 0.07816, 0, 0.27778],
     "8217": [0, 0.69444, 0.07816, 0, 0.27778],
     "8220": [0, 0.69444, 0.14205, 0, 0.5],
-    "8221": [0, 0.69444, 0.00316, 0, 0.5],
-},
-"SansSerif-Regular": {
+    "8221": [0, 0.69444, 0.00316, 0, 0.5]
+  },
+  "SansSerif-Regular": {
     "32": [0, 0, 0, 0, 0.25],
     "33": [0, 0.69444, 0, 0, 0.31945],
     "34": [0, 0.69444, 0, 0, 0.5],
@@ -3218,9 +3214,9 @@ function assertSpan(group) {
     "8216": [0, 0.69444, 0, 0, 0.27778],
     "8217": [0, 0.69444, 0, 0, 0.27778],
     "8220": [0, 0.69444, 0, 0, 0.5],
-    "8221": [0, 0.69444, 0, 0, 0.5],
-},
-"Script-Regular": {
+    "8221": [0, 0.69444, 0, 0, 0.5]
+  },
+  "Script-Regular": {
     "32": [0, 0, 0, 0, 0.25],
     "65": [0, 0.7, 0.22925, 0, 0.80253],
     "66": [0, 0.7, 0.04087, 0, 0.90757],
@@ -3248,9 +3244,9 @@ function assertSpan(group) {
     "88": [0, 0.7, 0.26006, 0, 0.94445],
     "89": [0, 0.7, 0.2939, 0, 0.70961],
     "90": [0, 0.7, 0.24037, 0, 0.8212],
-    "160": [0, 0, 0, 0, 0.25],
-},
-"Size1-Regular": {
+    "160": [0, 0, 0, 0, 0.25]
+  },
+  "Size1-Regular": {
     "32": [0, 0, 0, 0, 0.25],
     "40": [0.35001, 0.85, 0, 0, 0.45834],
     "41": [0.35001, 0.85, 0, 0, 0.45834],
@@ -3276,7 +3272,7 @@ function assertSpan(group) {
     "8730": [0.35001, 0.85, 0, 0, 1.0],
     "8739": [-0.00599, 0.606, 0, 0, 0.33333],
     "8741": [-0.00599, 0.606, 0, 0, 0.55556],
-    "8747": [0.1, 0.2, 0.11111, 0, 0.41667],
+    "8747": [0.30612, 0.805, 0.19445, 0, 0.47222],
     "8748": [0.306, 0.805, 0.19445, 0, 0.47222],
     "8749": [0.306, 0.805, 0.19445, 0, 0.47222],
     "8750": [0.30612, 0.805, 0.19445, 0, 0.47222],
@@ -3295,9 +3291,9 @@ function assertSpan(group) {
     "10753": [0.25001, 0.75, 0, 0, 1.11111],
     "10754": [0.25001, 0.75, 0, 0, 1.11111],
     "10756": [0.25001, 0.75, 0, 0, 0.83334],
-    "10758": [0.25001, 0.75, 0, 0, 0.83334],
-},
-"Size2-Regular": {
+    "10758": [0.25001, 0.75, 0, 0, 0.83334]
+  },
+  "Size2-Regular": {
     "32": [0, 0, 0, 0, 0.25],
     "40": [0.65002, 1.15, 0, 0, 0.59722],
     "41": [0.65002, 1.15, 0, 0, 0.59722],
@@ -3316,7 +3312,7 @@ function assertSpan(group) {
     "8720": [0.55001, 1.05, 0, 0, 1.27778],
     "8721": [0.55001, 1.05, 0, 0, 1.44445],
     "8730": [0.65002, 1.15, 0, 0, 1.0],
-    "8747": [0.5, 0.5, 0.44445, 0, 0.55556],
+    "8747": [0.86225, 1.36, 0.44445, 0, 0.55556],
     "8748": [0.862, 1.36, 0.44445, 0, 0.55556],
     "8749": [0.862, 1.36, 0.44445, 0, 0.55556],
     "8750": [0.86225, 1.36, 0.44445, 0, 0.55556],
@@ -3334,9 +3330,9 @@ function assertSpan(group) {
     "10753": [0.55001, 1.05, 0, 0, 1.51112],
     "10754": [0.55001, 1.05, 0, 0, 1.51112],
     "10756": [0.55001, 1.05, 0, 0, 1.11111],
-    "10758": [0.55001, 1.05, 0, 0, 1.11111],
-},
-"Size3-Regular": {
+    "10758": [0.55001, 1.05, 0, 0, 1.11111]
+  },
+  "Size3-Regular": {
     "32": [0, 0, 0, 0, 0.25],
     "40": [0.95003, 1.45, 0, 0, 0.73611],
     "41": [0.95003, 1.45, 0, 0, 0.73611],
@@ -3357,9 +3353,9 @@ function assertSpan(group) {
     "8970": [0.95003, 1.45, 0, 0, 0.58334],
     "8971": [0.95003, 1.45, 0, 0, 0.58334],
     "10216": [0.95003, 1.45, 0, 0, 0.75],
-    "10217": [0.95003, 1.45, 0, 0, 0.75],
-},
-"Size4-Regular": {
+    "10217": [0.95003, 1.45, 0, 0, 0.75]
+  },
+  "Size4-Regular": {
     "32": [0, 0, 0, 0, 0.25],
     "40": [1.25003, 1.75, 0, 0, 0.79167],
     "41": [1.25003, 1.75, 0, 0, 0.79167],
@@ -3406,9 +3402,9 @@ function assertSpan(group) {
     "57680": [0, 0.12, 0, 0, 0.45],
     "57681": [0, 0.12, 0, 0, 0.45],
     "57682": [0, 0.12, 0, 0, 0.45],
-    "57683": [0, 0.12, 0, 0, 0.45],
-},
-"Typewriter-Regular": {
+    "57683": [0, 0.12, 0, 0, 0.45]
+  },
+  "Typewriter-Regular": {
     "32": [0, 0, 0, 0, 0.525],
     "33": [0, 0.61111, 0, 0, 0.525],
     "34": [0, 0.61111, 0, 0, 0.525],
@@ -3533,28 +3529,9 @@ function assertSpan(group) {
     "8216": [0, 0.61111, 0, 0, 0.525],
     "8217": [0, 0.61111, 0, 0, 0.525],
     "8242": [0, 0.61111, 0, 0, 0.525],
-    "9251": [0.11111, 0.21944, 0, 0, 0.525],
-},});
-
-function scaleMetrics(metrics, scaleFactor = 1.2) {
-  const scaled = {};
-  for (const font in metrics) {
-    scaled[font] = {};
-    for (const char in metrics[font]) {
-      const [height, depth, italicCorrection, skew, width] = metrics[font][char];
-      scaled[font][char] = [
-        height * scaleFactor,      // Height
-        depth * scaleFactor,       // Depth
-        italicCorrection,          // Italic correction (unchanged)
-        skew,                      // Skew (unchanged)
-        width * scaleFactor        // Width
-      ];
-    }
+    "9251": [0.11111, 0.21944, 0, 0, 0.525]
   }
-  return scaled;
-}
-
-var fontMetricsData = scaleMetrics(OriginalfontMetricsData, 2.3);
+});
 ;// CONCATENATED MODULE: ./src/fontMetrics.js
 
 
@@ -4826,7 +4803,6 @@ var sizeMultipliers = [// fontMetrics.js:getGlobalMetrics also uses size indexes
 // you change size indexes, change that function.
 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.2, 1.44, 1.728, 2.074, 2.488];
 
-
 var sizeAtStyle = function sizeAtStyle(size, style) {
   return style.size < 2 ? size : sizeStyleMap[size - 1][style.size - 1];
 }; // In these types, "" (empty string) means "no change".
@@ -4844,11 +4820,11 @@ var Options = /*#__PURE__*/function () {
   // represents a specific font (i.e. SansSerif Bold).
   // See: https://tex.stackexchange.com/questions/22350/difference-between-textrm-and-mathrm
 
-  const TEXSettings = BdApi.Data.load("LaX", "settings") || {};
   /**
    * The base size index.
    */
   function Options(data) {
+    const TEXSettings = BdApi.Data.load("LaX", "persistentSettings") || {};
     this.style = void 0;
     this.color = void 0;
     this.size = void 0;
@@ -4858,12 +4834,12 @@ var Options = /*#__PURE__*/function () {
     this.fontFamily = void 0;
     this.fontWeight = void 0;
     this.fontShape = void 0;
-    this.sizeMultiplier = 1.5;
-    this.maxSize = Infinity;
+    this.sizeMultiplier = void 0;
+    this.maxSize = void 0;
     this.minRuleThickness = void 0;
     this._fontMetrics = void 0;
     this.style = data.style;
-    this.color = TEXSettings.FontColor;
+    this.color = TEXSettings.textColor;
     this.size = data.size || Options.BASESIZE;
     this.textSize = data.textSize || this.size;
     this.phantom = !!data.phantom;
@@ -4871,7 +4847,7 @@ var Options = /*#__PURE__*/function () {
     this.fontFamily = data.fontFamily || "";
     this.fontWeight = data.fontWeight || '';
     this.fontShape = data.fontShape || '';
-    this.sizeMultiplier = 1.5;
+    this.sizeMultiplier = sizeMultipliers[this.size - 1];
     this.maxSize = data.maxSize;
     this.minRuleThickness = data.minRuleThickness;
     this._fontMetrics = undefined;
@@ -8949,7 +8925,7 @@ var sqrtSvg = function sqrtSvg(sqrtName, height, viewBoxHeight, extraViniculum, 
   var pathNode = new PathNode(sqrtName, path);
   var svg = new SvgNode([pathNode], {
     // Note: 1000:1 ratio of viewBox to document em width.
-    "width": "800em",
+    "width": "400em",
     "height": height + "em",
     "viewBox": "0 0 400000 " + viewBoxHeight,
     "preserveAspectRatio": "xMinYMin slice"
@@ -8994,11 +8970,11 @@ var makeSqrtImage = function makeSqrtImage(height, options) {
       sizeMultiplier = 0.7; // mimic a \scriptfont radical
     }
 
-    spanHeight = (1.6 + extraViniculum + emPad) / sizeMultiplier;
-    texHeight = (1.7 + extraViniculum) / sizeMultiplier;
+    spanHeight = (1.0 + extraViniculum + emPad) / sizeMultiplier;
+    texHeight = (1.00 + extraViniculum) / sizeMultiplier;
     span = sqrtSvg("sqrtMain", spanHeight, viewBoxHeight, extraViniculum, options);
     span.style.minWidth = "0.853em";
-    advanceWidth = 1.2 / sizeMultiplier; // from the font.
+    advanceWidth = 0.833 / sizeMultiplier; // from the font.
   } else if (delim.type === "large") {
     // These SVGs come from fonts: KaTeX_Size1, _Size2, etc.
     viewBoxHeight = (1000 + vbPad) * sizeToMaxHeight[delim.size];
