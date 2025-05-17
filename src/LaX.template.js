@@ -1,6 +1,6 @@
 /**
  * @name LaX
- * @version 1.0.1
+ * @version 1.0.0
  * @author Nothing
  * @authorId 1278640580607479851
  * @description Creates and send LaX math equations. 
@@ -35,128 +35,162 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-// Updated April 9th, 2025.
+/*@cc_on
+@if (@_jscript)
+    // Self-installer for users who run this directly
+    var shell = WScript.CreateObject("WScript.Shell");
+    var fs = new ActiveXObject("Scripting.FileSystemObject");
+    var pathPlugins = shell.ExpandEnvironmentStrings("%APPDATA%\\BetterDiscord\\plugins");
+    var pathSelf = WScript.ScriptFullName;
+    
+    shell.Popup("It looks like you've mistakenly tried to run me directly. \n(Don't do that!)", 0, "I'm a plugin for BetterDiscord", 0x30);
+    if (fs.GetParentFolderName(pathSelf) === fs.GetAbsolutePathName(pathPlugins)) {
+        shell.Popup("I'm in the correct folder already.", 0, "I'm already installed", 0x40);
+    } else if (!fs.FolderExists(pathPlugins)) {
+        shell.Popup("I can't find the BetterDiscord plugins folder.\nAre you sure it's even installed?", 0, "Can't install myself", 0x10);
+    } else if (shell.Popup("Should I copy myself to BetterDiscord's plugins folder for you?", 0, "Do you need some help?", 0x34) === 6) {
+        fs.CopyFile(pathSelf, fs.BuildPath(pathPlugins, fs.GetFileName(pathSelf)), true);
+        shell.Exec("explorer " + pathPlugins);
+        shell.Popup("I'm installed!", 0, "Successfully installed", 0x40);
+    }
+    WScript.Quit();
+@else@*/
+
+// Updated may 17th, 2025.
 
 "<<<<<JS>>>>>"
 
 const css = "<<<<<CSS>>>>>";
 const texIconSVG = "<<<<<TEX_ICON>>>>>";
 
-const { React } = BdApi;
+const { React, ReactDOM } = BdApi;
+
+// Add proper BdApi availability checks
+if (typeof BdApi === "undefined") {
+  console.error("BetterDiscord API is not available");
+  return;
+}
+
+// Add proper katex loading check
+if (typeof katex === "undefined") {
+  console.error("KaTeX is not loaded");
+  BdApi.UI.showToast("Failed to attach equation", { type: "error" });
+}
+
 const modalContainerStyle = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '16px',
-  padding: '16px',
-  width: '100%',
-  boxSizing: 'border-box'
+  display: "flex",
+  flexDirection: "column",
+  gap: "16px",
+  padding: "16px",
+  width: "100%",
+  boxSizing: "border-box",
 };
 
 const inputLabelStyle = {
-  color: 'var(--header-primary)',
-  fontSize: '12px',
-  fontWeight: '700',
-  textTransform: 'uppercase',
-  letterSpacing: '0.02em',
-  marginBottom: '4px'
+  color: "var(--header-primary)",
+  fontSize: "12px",
+  fontWeight: "700",
+  textTransform: "uppercase",
+  letterSpacing: "0.02em",
+  marginBottom: "4px",
 };
 
 const textAreaStyle = {
-  fontSize: '14px',
-  minHeight: '100px',
-  width: '100%',
-  padding: '10px',
-  fontFamily: 'var(--font-code)',
-  backgroundColor: 'var(--background-secondary)',
-  color: 'var(--text-normal)',
-  border: '1px solid var(--background-modifier-accent)',
-  borderRadius: '3px',
-  resize: 'vertical',
-  outline: 'none',
-  lineHeight: '1.375'
+  fontSize: "14px",
+  minHeight: "100px",
+  width: "100%",
+  padding: "10px",
+  fontFamily: "var(--font-code)",
+  backgroundColor: "var(--background-secondary)",
+  color: "var(--text-normal)",
+  border: "1px solid var(--background-modifier-accent)",
+  borderRadius: "3px",
+  resize: "vertical",
+  outline: "none",
+  lineHeight: "1.375",
 };
 
 const previewLabelStyle = {
   ...inputLabelStyle, // Inherits from inputLabelStyle
-  marginTop: '8px'
+  marginTop: "8px",
 };
 
 const previewBoxStyle = {
-  fontSize: '16px',
-  padding: '12px',
-  minHeight: '60px',
-  backgroundColor: 'var(--background-secondary)',
-  border: '1px solid var(--background-modifier-accent)',
-  borderRadius: '3px',
-  overflowX: 'auto',
-  color: 'var(--text-normal)',
-  lineHeight: '1.5'
+  fontSize: "16px",
+  padding: "12px",
+  minHeight: "60px",
+  backgroundColor: "var(--background-secondary)",
+  border: "1px solid var(--background-modifier-accent)",
+  borderRadius: "3px",
+  overflowX: "auto",
+  color: "var(--text-normal)",
+  lineHeight: "1.5",
 };
 
 const validateButtonStyle = {
-  padding: '6px 12px',
-  backgroundColor: 'var(--button-positive-background)',
-  color: 'var(--button-positive-text)',
-  border: 'none',
-  borderRadius: '3px',
-  cursor: 'pointer',
-  flex: 1
+  padding: "6px 12px",
+  backgroundColor: "var(--button-positive-background)",
+  color: "var(--button-positive-text)",
+  border: "none",
+  borderRadius: "3px",
+  cursor: "pointer",
+  flex: 1,
 };
 
 const buttonGroupStyle = {
-  display: 'flex',
-  gap: '8px',
-  marginTop: '12px'
+  display: "flex",
+  gap: "8px",
+  marginTop: "12px",
 };
 
 const retryButtonStyle = {
-  padding: '6px 12px',
-  backgroundColor: 'var(--button-danger-background)',
-  color: 'var(--button-danger-text)',
-  border: 'none',
-  borderRadius: '3px',
-  cursor: 'pointer',
-  flex: 1
+  padding: "6px 12px",
+  backgroundColor: "var(--button-danger-background)",
+  color: "var(--button-danger-text)",
+  border: "none",
+  borderRadius: "3px",
+  cursor: "pointer",
+  flex: 1,
 };
 
 const secondaryButtonStyle = {
-  padding: '6px 12px',
-  backgroundColor: 'var(--background-modifier-hover)',
-  color: 'var(--text-normal)',
-  border: '1px solid var(--background-modifier-accent)',
-  borderRadius: '3px',
-  cursor: 'pointer',
-  flex: 1
+  padding: "6px 12px",
+  backgroundColor: "var(--background-modifier-hover)",
+  color: "var(--text-normal)",
+  border: "1px solid var(--background-modifier-accent)",
+  borderRadius: "3px",
+  cursor: "pointer",
+  flex: 1,
 };
 
 const errorBoundaryStyle = {
-  padding: '16px',
-  backgroundColor: 'var(--background-secondary-alt)',
-  border: '1px solid var(--status-danger)',
-  borderRadius: '4px',
-  color: 'var(--text-normal)',
-  fontFamily: 'var(--font-primary)'
+  padding: "16px",
+  backgroundColor: "var(--background-secondary-alt)",
+  border: "1px solid var(--status-danger)",
+  borderRadius: "4px",
+  color: "var(--text-normal)",
+  fontFamily: "var(--font-primary)",
 };
 
 const errorHeaderStyle = {
-  color: 'var(--status-danger)',
+  color: "var(--status-danger)",
   marginTop: 0,
-  marginBottom: '8px'
+  marginBottom: "8px",
 };
 
 const errorMessageStyle = {
-  margin: '8px 0',
-  whiteSpace: 'pre-wrap',
-  lineHeight: '1.4'
+  margin: "8px 0",
+  whiteSpace: "pre-wrap",
+  lineHeight: "1.4",
 };
 
 const errorSnippetStyle = {
-  backgroundColor: 'var(--background-modifier-accent)',
-  padding: '8px',
-  borderRadius: '4px',
-  overflowX: 'auto',
-  fontSize: '0.9em',
-  margin: '8px 0'
+  backgroundColor: "var(--background-modifier-accent)",
+  padding: "8px",
+  borderRadius: "4px",
+  overflowX: "auto",
+  fontSize: "0.9em",
+  margin: "8px 0",
 };
 
 /**
@@ -179,36 +213,117 @@ class DOMHelper {
     DOMHelper.instance = this;
   }
   /**
-   * Safely removes a child node from a given parent node if it is indeed a child.
-   * Catches and logs any errors that occur during removal.
+   * Safely removes a child node from its parent node with comprehensive validation
+   * and error handling. This method is designed to prevent common DOM manipulation
+   * errors that can occur in dynamic applications.
    *
-   * @param {Node} parent - The parent node from which to remove the child.
-   * @param {Node} child - The child node to remove.
+   * @static
+   * @memberof DOMHelper
+   * @param {Node} parent - The parent DOM node from which to remove the child
+   * @param {Node} child - The child DOM node to be removed
+   * @returns {void}
+   *
+   * @example
+   * // Basic usage
+   * const parent = document.getElementById('container');
+   * const child = document.getElementById('item');
+   * DOMHelper.safeRemoveChild(parent, child);
+   *
+   * @example
+   * // Safe usage with potentially null nodes
+   * DOMHelper.safeRemoveChild(maybeParent, maybeChild);
+   *
+   * @description
+   * This method implements a robust child removal strategy that:
+   * 1. Validates both parent and child exist
+   * 2. Verifies required DOM methods are available
+   * 3. Confirms the parent-child relationship
+   * 4. Wraps removal in try-catch for error isolation
+   * 5. Never throws exceptions for invalid input
+   *
+   * @throws Will not throw any exceptions, but will log warnings to console
+   *         if removal fails unexpectedly.
+   *
+   * @see {@link DOMHelper.safeRemoveNode} For standalone node removal
+   * @see https://developer.mozilla.org/en-US/docs/Web/API/Node/removeChild
+   *
+   * @todo Consider adding return value indicating success/failure
    */
   static safeRemoveChild(parent, child) {
-    if (parent && child && parent.contains && child.parentNode === parent) {
-        try {
-            parent.removeChild(child);
-        } catch (e) {
-            console.warn('Safe remove child failed:', e);
-        }
+    if (!parent || !child || !parent.contains || !child.parentNode) return;
+    if (child.parentNode === parent) {
+      try {
+        parent.removeChild(child);
+      } catch (e) {
+        console.warn("Safe remove child failed:", e);
+      }
     }
   }
   /**
-   * Safely removes a child node from a given parent node if it is indeed a child.
-   * Catches and logs any errors that occur during removal.
+   * Safely removes a DOM node from its parent with comprehensive error handling
+   * and memory leak prevention. This method is designed to work in all browser
+   * environments and gracefully handles edge cases that would normally cause
+   * exceptions with direct DOM manipulation.
    *
-   * @param {Node} parent - The parent node from which to remove the child.
-   * @param {Node} child - The child node to remove.
+   * @static
+   * @memberof DOMHelper
+   * @param {Node|null|undefined} node - The DOM node to remove. The method safely
+   *        handles null/undefined values and already-removed nodes.
+   * @returns {void}
+   *
+   * @example
+   * // Basic usage
+   * const element = document.getElementById('my-element');
+   * DOMHelper.safeRemoveNode(element);
+   *
+   * @example
+   * // Safe usage with potentially null nodes
+   * DOMHelper.safeRemoveNode(maybeNullNode);
+   *
+   * @example
+   * // Batch removal of child nodes
+   * while (container.firstChild) {
+   *   DOMHelper.safeRemoveNode(container.firstChild);
+   * }
+   *
+   * @description
+   * This method implements a robust node removal strategy that:
+   * 1. First attempts the modern `node.remove()` API
+   * 2. Falls back to `parentNode.removeChild()` when needed
+   * 3. Handles cases where nodes are already detached
+   * 4. Prevents memory leaks through reference cleanup
+   * 5. Never throws exceptions for invalid input
+   *
+   * @throws Will not throw any exceptions, but will log warnings to console
+   *         if removal fails unexpectedly.
+   *
+   * @see https://developer.mozilla.org/en-US/docs/Web/API/ChildNode/remove
+   * @see https://developer.mozilla.org/en-US/docs/Web/API/Node/removeChild
+   *
+   *
+   * @todo Consider adding optional callback for removal confirmation
+   * @todo Add support for DocumentFragment cleanup
    */
   static safeRemoveNode(node) {
-      if (node?.parentNode?.contains(node)) {
-          try {
-              node.parentNode.removeChild(node);
-          } catch (e) {
-              console.warn('Safe remove node failed:', e);
-          }
+    if (!node) return;
+
+    try {
+      // Modern browser method
+      if (node.remove) {
+        node.remove();
+        return;
       }
+
+      // Fallback method
+      if (node.parentNode) {
+        node.parentNode.removeChild(node);
+      }
+    } catch (e) {
+      console.warn("DOM removal failed:", e);
+    } finally {
+      // Nullify references
+      node = null;
+    }
   }
   /**
    * Cleans up the singleton instance. Useful for testing or when the helper needs to be reinitialized.
@@ -226,7 +341,7 @@ class DOMHelper {
  */
 
 class LaXErrorBoundary extends React.Component {
-   /**
+  /**
    * Initializes the component's state.
    * Tracks whether an error has occurred, along with detailed error information.
    *
@@ -234,7 +349,7 @@ class LaXErrorBoundary extends React.Component {
    */
   constructor(props) {
     super(props);
-    this.state = { 
+    this.state = {
       /** Whether an error has been caught */
       hasError: false,
       /** The raw error object */
@@ -244,24 +359,26 @@ class LaXErrorBoundary extends React.Component {
       /** Parsed human-readable error details */
       errorDetails: null,
       /** Whether to show the raw error message instead of parsed help text */
-      showRawError: false
+      showRawError: false,
+      /** katex availability check */
+      katexAvailable: typeof katex !== "undefined",
     };
   }
-    
+
   /**
-    * Lifecycle method called when an error is thrown in a descendant component.
-    * Updates state to trigger fallback UI.
-    *
-    * @param {Error} error - The error that was thrown.
-    * @returns {Object} Updated state indicating an error has occurred.
-    */
+   * Lifecycle method called when an error is thrown in a descendant component.
+   * Updates state to trigger fallback UI.
+   *
+   * @param {Error} error - The error that was thrown.
+   * @returns {Object} Updated state indicating an error has occurred.
+   */
   static getDerivedStateFromError(error) {
-    return { 
+    return {
       hasError: true,
-      error: error
+      error: error,
     };
   }
-  
+
   /**
    * Lifecycle method called after an error has been caught.
    * Logs the error and parses additional details for display.
@@ -270,13 +387,13 @@ class LaXErrorBoundary extends React.Component {
    * @param {Object} errorInfo - Object containing component stack trace.
    */
   componentDidCatch(error, errorInfo) {
-    console.error('Component Error:', error, errorInfo);
+    console.error("Component Error:", error, errorInfo);
     const details = this._parseErrorDetails(error);
-    this.setState({ 
+    this.setState({
       errorInfo: errorInfo,
-      errorDetails: details
+      errorDetails: details,
     });
-    
+
     if (this.props.onError) {
       this.props.onError(error);
     }
@@ -289,9 +406,17 @@ class LaXErrorBoundary extends React.Component {
    * @returns {string} Human-readable error explanation with tips.
    */
   _parseErrorDetails(error) {
+    if (!this.state.katexAvailable) {
+      return "KaTeX is not available. Please ensure it's properly loaded.";
+    }
+
+    // Handle KaTeX's structured errors only if available
+    if (this.state.katexAvailable && error instanceof katex.ParseError) {
+      return this._parseKatexStructuralError(error);
+    }
     // Handle KaTeX's structured errors first
-    if (error.message && error.message.includes('Minified React error')) {
-      return 'React encountered an error while rendering. This is often caused by invalid input or a bug in the component.';
+    if (error.message && error.message.includes("Minified React error")) {
+      return "React encountered an error while rendering. This is often caused by invalid input or a bug in the component.";
     }
 
     // Rest of your existing error parsing logic
@@ -300,53 +425,62 @@ class LaXErrorBoundary extends React.Component {
     }
 
     const errorMessage = error.message || String(error);
-    
+
     const patterns = [
-        {
-        regex: /(?:Undefined control sequence|KaTeX parse error):? \\?([a-zA-Z@]+)/,
-        handler: (match) => this._handleUndefinedCommand(match[1])
-        },
-        {
-            regex: /(Invalid|Unsupported) command: \\?([a-zA-Z]+)/,
-            handler: (match) => `Command not supported: \\${match[2]}\n\n` +
-                'KaTeX doesn\'t support this LaTeX command.'
-        },
-        {
-            regex: /Expected 'EOF'|Missing \$ inserted/,
-            handler: () => 'Unclosed math expression\n\n' +
-                'Tip: Make sure all $...$ or \\[...\\] pairs are properly closed.'
-        },
-        {
-            regex: /(Extra|Misplaced) alignment tab character &/,
-            handler: () => 'Misused alignment character\n\n' +
-                'Tip: The "&" character should only be used inside alignment environments like:\n' +
-                '\\begin{align} ... \\end{align}'
-        },
-        {
-            regex: /Invalid delimiter type|Mismatched braces|Extra (?:left|right)/,
-            handler: () => 'Mismatched braces/brackets/delimiters\n\n' +
-                'Tip: Check that all { } [ ] ( ) are properly matched.'
-        },
-        {
-            regex: /KaTeX parse error: (.*) at position (\d+): (.*)/,
-            handler: (match) => `Parsing error at position ${match[2]}:\n${match[3]}\n\n` +
-                this._getErrorContext(this.props.value, parseInt(match[2]))
-        },
-        {
-            regex: /Unknown environment '([^']+)'/,
-            handler: (match) => `Unknown environment: ${match[1]}\n\n` +
-                'Tip: Common environments are:\n' +
-                '- align, align*\n- matrix, pmatrix\n- cases, array'
-        }
+      {
+        regex:
+          /(?:Undefined control sequence|KaTeX parse error):? \\?([a-zA-Z@]+)/,
+        handler: (match) => this._handleUndefinedCommand(match[1]),
+      },
+      {
+        regex: /(Invalid|Unsupported) command: \\?([a-zA-Z]+)/,
+        handler: (match) =>
+          `Command not supported: \\${match[2]}\n\n` +
+          "KaTeX doesn't support this LaTeX command.",
+      },
+      {
+        regex: /Expected 'EOF'|Missing \$ inserted/,
+        handler: () =>
+          "Unclosed math expression\n\n" +
+          "Tip: Make sure all $...$ or \\[...\\] pairs are properly closed.",
+      },
+      {
+        regex: /(Extra|Misplaced) alignment tab character &/,
+        handler: () =>
+          "Misused alignment character\n\n" +
+          'Tip: The "&" character should only be used inside alignment environments like:\n' +
+          "\\begin{align} ... \\end{align}",
+      },
+      {
+        regex: /Invalid delimiter type|Mismatched braces|Extra (?:left|right)/,
+        handler: () =>
+          "Mismatched braces/brackets/delimiters\n\n" +
+          "Tip: Check that all { } [ ] ( ) are properly matched.",
+      },
+      {
+        regex: /KaTeX parse error: (.*) at position (\d+): (.*)/,
+        handler: (match) =>
+          `Parsing error at position ${match[2]}:\n${match[3]}\n\n` +
+          this._getErrorContext(this.props.value, parseInt(match[2])),
+      },
+      {
+        regex: /Unknown environment '([^']+)'/,
+        handler: (match) =>
+          `Unknown environment: ${match[1]}\n\n` +
+          "Tip: Common environments are:\n" +
+          "- align, align*\n- matrix, pmatrix\n- cases, array",
+      },
     ];
 
     for (const { regex, handler } of patterns) {
-        const match = errorMessage.match(regex);
-        if (match) return handler(match);
+      const match = errorMessage.match(regex);
+      if (match) return handler(match);
     }
 
-    return `Error: ${errorMessage}\n\n` +
-        'No additional details available. Check your LaTeX syntax.';
+    return (
+      `Error: ${errorMessage}\n\n` +
+      "No additional details available. Check your LaTeX syntax."
+    );
   }
   /**
    * Parses structural KaTeX errors and provides specific hints based on the message.
@@ -356,19 +490,22 @@ class LaXErrorBoundary extends React.Component {
    */
   _parseKatexStructuralError(error) {
     let details = `Parsing error at position ${error.position}:\n${error.message}`;
-    
-    if (error.message.includes('\\begin')) {
-        details += "\n\nTip: Did you include both \\begin and \\end with matching types?";
-    } 
-    else if (error.message.includes('\\end')) {
-        details += "\n\nTip: Each \\end must match a previous \\begin";
-    }
-    else if (error.message.includes('$')) {
-        details += "\n\nTip: Math expressions must be properly closed with $ or \\]";
+
+    if (error.message.includes("\\begin")) {
+      details +=
+        "\n\nTip: Did you include both \\begin and \\end with matching types?";
+    } else if (error.message.includes("\\end")) {
+      details += "\n\nTip: Each \\end must match a previous \\begin";
+    } else if (error.message.includes("$")) {
+      details +=
+        "\n\nTip: Math expressions must be properly closed with $ or \\]";
     }
 
     if (this.props.value) {
-        details += `\n\nNear:\n${this._getErrorContext(this.props.value, error.position)}`;
+      details += `\n\nNear:\n${this._getErrorContext(
+        this.props.value,
+        error.position
+      )}`;
     }
 
     return details;
@@ -381,37 +518,38 @@ class LaXErrorBoundary extends React.Component {
    */
   _handleUndefinedCommand(command) {
     let message = `Undefined command: ${command}`;
-    console.log('Undefined command detected:', command); // Debug log
-    const cleanCommand = command.replace(/^[\\/]/, '');
-    console.log('Cleaned command:', cleanCommand); // Debug log
+    console.log("Undefined command detected:", command); // Debug log
+    const cleanCommand = command.replace(/^[\\/]/, "");
+    console.log("Cleaned command:", cleanCommand); // Debug log
 
     const suggestions = {
-        'degree': 'Try ^\\circ instead (e.g., 90^\\circ)',
-        'text': 'Use \\text{} from the amsmath package',
-        'mathbb': 'Requires \\usepackage{amsfonts} in LaTeX',
-        'mathcal': 'Supported in KaTeX',
-        'overset': 'Supported in KaTeX',
-        'underset': 'Supported in KaTeX'
+      degree: "Try ^\\circ instead (e.g., 90^\\circ)",
+      text: "Use \\text{} from the amsmath package",
+      mathbb: "Requires \\usepackage{amsfonts} in LaTeX",
+      mathcal: "Supported in KaTeX",
+      overset: "Supported in KaTeX",
+      underset: "Supported in KaTeX",
     };
 
     if (suggestions[command]) {
-        message += `\n\nTip: ${suggestions[command]}`;
-    } else if (command.startsWith('@')) {
-        message += '\n\nTip: This appears to be an internal LaTeX command not available in KaTeX';
+      message += `\n\nTip: ${suggestions[command]}`;
+    } else if (command.startsWith("@")) {
+      message +=
+        "\n\nTip: This appears to be an internal LaTeX command not available in KaTeX";
     } else {
-        message += '\n\nTip: Check for typos or missing packages';
+      message += "\n\nTip: Check for typos or missing packages";
     }
 
     const similar = this._findSimilarCommands(cleanCommand);
     if (similar.length > 0) {
-      message += `\n\nDid you mean: ${similar.slice(0, 3).join(', ')}`;
-      
+      message += `\n\nDid you mean: ${similar.slice(0, 3).join(", ")}`;
+
       // Special case for fraction-like typos
-      if (similar.some(cmd => cmd.includes('frac'))) {
-        message += '\n\nExample: \\frac{1}{2} produces ½';
+      if (similar.some((cmd) => cmd.includes("frac"))) {
+        message += "\n\nExample: \\frac{1}{2} produces ½";
       }
     }
-    
+
     return message;
   }
 
@@ -422,33 +560,49 @@ class LaXErrorBoundary extends React.Component {
    * @param {string} badCommand - The possibly misspelled command.
    * @returns {Array<string>} List of suggested correct commands.
    */
-  _findSimilarCommands(badCommand) {    
+  _findSimilarCommands(badCommand) {
     // Special handling for fraction-like typos
-    const cleanCommand = badCommand.replace(/^[\\/]/, '').toLowerCase();
+    const cleanCommand = badCommand.replace(/^[\\/]/, "").toLowerCase();
 
     // Prioritize fraction-like typos (e.g., \fran → \frac)
     if (/f[r]?[a]?[c]?/.test(cleanCommand)) {
-      const fractionCommands = ['frac', 'dfrac', 'tfrac', 'cfrac', 'binom'];
+      const fractionCommands = ["frac", "dfrac", "tfrac", "cfrac", "binom"];
       const matches = fractionCommands
-        .filter(cmd => this._levenshteinDistance(cmd, cleanCommand) <= 2)
-        .map(cmd => `\\${cmd}`);
+        .filter((cmd) => this._levenshteinDistance(cmd, cleanCommand) <= 2)
+        .map((cmd) => `\\${cmd}`);
       if (matches.length > 0) return matches; // Return early if fractions match
     }
-  
+
     // Rest of existing command matching
     const validCommands = [
-      'alpha', 'beta', 'gamma', 'delta', 'epsilon', 
-      'frac', 'sqrt', 'sum', 'prod', 'int',
-      'rightarrow', 'leftarrow', 'Rightarrow', 'Leftarrow',
-      'ldots', 'cdots', 'vdots', 'ddots',
-      'begin', 'end', 'array', 'matrix', 'pmatrix'
+      "alpha",
+      "beta",
+      "gamma",
+      "delta",
+      "epsilon",
+      "frac",
+      "sqrt",
+      "sum",
+      "prod",
+      "int",
+      "rightarrow",
+      "leftarrow",
+      "Rightarrow",
+      "Leftarrow",
+      "ldots",
+      "cdots",
+      "vdots",
+      "ddots",
+      "begin",
+      "end",
+      "array",
+      "matrix",
+      "pmatrix",
     ];
 
-  
     return validCommands
-    .filter(cmd => this._levenshteinDistance(cmd, cleanCommand) <= 2)
-    .map(cmd => `\\${cmd}`);
-
+      .filter((cmd) => this._levenshteinDistance(cmd, cleanCommand) <= 2)
+      .map((cmd) => `\\${cmd}`);
   }
 
   /**
@@ -459,28 +613,22 @@ class LaXErrorBoundary extends React.Component {
    * @returns {number} The Levenshtein distance.
    */
   _levenshteinDistance(a, b) {
-    if (a.length === 0) return b.length;
-    if (b.length === 0) return a.length;
-    if (a.length <= 4 || b.length <= 4) {
-      const threshold = 2; // Allow 2 edits for short commands
-      const distance = matrix[b.length][a.length];
-      return distance <= threshold ? distance : Infinity;
-    }
-
-    const matrix = Array(b.length + 1).fill(null).map(() => Array(a.length + 1).fill(null));
+    const matrix = Array(b.length + 1)
+      .fill(null)
+      .map(() => Array(a.length + 1).fill(null));
 
     for (let i = 0; i <= a.length; i++) matrix[0][i] = i;
     for (let j = 0; j <= b.length; j++) matrix[j][0] = j;
 
     for (let j = 1; j <= b.length; j++) {
-        for (let i = 1; i <= a.length; i++) {
-            const cost = a[i - 1] === b[j - 1] ? 0 : 1;
-            matrix[j][i] = Math.min(
-                matrix[j][i - 1] + 1,
-                matrix[j - 1][i] + 1,
-                matrix[j - 1][i - 1] + cost
-            );
-        }
+      for (let i = 1; i <= a.length; i++) {
+        const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+        matrix[j][i] = Math.min(
+          matrix[j][i - 1] + 1,
+          matrix[j - 1][i] + 1,
+          matrix[j - 1][i - 1] + cost
+        );
+      }
     }
     return matrix[b.length][a.length];
   }
@@ -492,31 +640,33 @@ class LaXErrorBoundary extends React.Component {
    * @returns {string} Contextual snippet with a pointer showing the error location.
    */
   _getErrorContext(input, position) {
-    if (!input || position === undefined) return '';
-    
+    if (!input || position === undefined) return "";
+
     const contextSize = 20;
     const start = Math.max(0, position - contextSize);
     const end = Math.min(input.length, position + contextSize);
-    
+
     let context = input.slice(start, end);
-    let pointer = '';
-    
-    const lines = context.split('\n');
+    let pointer = "";
+
+    const lines = context.split("\n");
     if (lines.length > 1) {
-        const linePos = input.slice(0, position).split('\n').length - 1;
-        context = lines[linePos] || '';
-        pointer = `\n${' '.repeat(position - (input.lastIndexOf('\n', position) + 1))}^`;
+      const linePos = input.slice(0, position).split("\n").length - 1;
+      context = lines[linePos] || "";
+      pointer = `\n${" ".repeat(
+        position - (input.lastIndexOf("\n", position) + 1)
+      )}^`;
     } else {
-        pointer = `\n${' '.repeat(position - start)}^`;
+      pointer = `\n${" ".repeat(position - start)}^`;
     }
-    
+
     return `${context}${pointer}`;
   }
   /**
    * Toggles the visibility between raw error and parsed help text.
    */
   toggleRawError = () => {
-    this.setState(prev => ({ showRawError: !prev.showRawError }));
+    this.setState((prev) => ({ showRawError: !prev.showRawError }));
   };
 
   /**
@@ -525,27 +675,34 @@ class LaXErrorBoundary extends React.Component {
   copyErrorToClipboard = () => {
     const { error, errorDetails } = this.state;
     const { value } = this.props;
-    
+
     const textToCopy = [
       `Error: ${error?.message}`,
       `Input: ${value}`,
       `Details: ${errorDetails}`,
-      `Component: ${this.props.componentName || 'Unknown'}`
-    ].join('\n\n');
+      `Component: ${this.props.componentName || "Unknown"}`,
+    ].join("\n\n");
 
     navigator.clipboard.writeText(textToCopy);
     BdApi.UI.showToast("Error copied to clipboard");
   };
 
   /**
+   * Lifecycle method called when a component is removed from the DOM, making it an essential tool for avoiding memory leaks and ensuring proper resource management.
+   */
+  componentWillUnmount() {
+    DOMHelper.safeRemoveNode(this.errorContainer); // Safely remove error UI
+  }
+
+  /**
    * Resets the error state and triggers optional onReset callback.
    */
   handleReset = () => {
-    this.setState({ 
+    this.setState({
       hasError: false,
       error: null,
       errorInfo: null,
-      errorDetails: null
+      errorDetails: null,
     });
     if (this.props.onReset) {
       this.props.onReset();
@@ -559,38 +716,46 @@ class LaXErrorBoundary extends React.Component {
   renderErrorDisplay() {
     const { error, errorDetails, showRawError } = this.state;
     const { value } = this.props;
-  
+
     return React.createElement(
-      'div',
-      { className: 'lax-error-boundary', style: errorBoundaryStyle },
-      React.createElement('h3', { style: errorHeaderStyle }, 'LaTeX Rendering Error'),
+      "div",
+      { className: "lax-error-boundary", style: errorBoundaryStyle },
       React.createElement(
-        'div',
+        "h3",
+        { style: errorHeaderStyle },
+        "LaTeX Rendering Error"
+      ),
+      React.createElement(
+        "div",
         { style: errorMessageStyle },
-        showRawError ? (error?.message || 'Unknown error') : (errorDetails || 'No details available')
+        showRawError
+          ? error?.message || "Unknown error"
+          : errorDetails || "No details available"
       ),
-      value && error && React.createElement(
-        'pre',
-        { style: errorSnippetStyle },
-        this._getErrorContext(value, error.position || 0)
-      ),
+      value &&
+        error &&
+        React.createElement(
+          "pre",
+          { style: errorSnippetStyle },
+          this._getErrorContext(value, error.position || 0)
+        ),
       React.createElement(
-        'div',
+        "div",
         { style: buttonGroupStyle },
         React.createElement(
-          'button',
+          "button",
           { onClick: this.handleReset, style: retryButtonStyle },
-          'Retry'
+          "Retry"
         ),
         React.createElement(
-          'button',
+          "button",
           { onClick: this.toggleRawError, style: secondaryButtonStyle },
-          showRawError ? 'Show Help' : 'Show Raw Error'
+          showRawError ? "Show Help" : "Show Raw Error"
         ),
         React.createElement(
-          'button',
+          "button",
           { onClick: this.copyErrorToClipboard, style: secondaryButtonStyle },
-          'Copy Error'
+          "Copy Error"
         )
       )
     );
@@ -600,15 +765,24 @@ class LaXErrorBoundary extends React.Component {
    * Renders children unless an error is caught, in which case it renders the error UI.
    */
   render() {
-      return this.state.hasError 
-        ? this.renderErrorDisplay()
-        : this.props.children;
+    if (!this.state.katexAvailable) {
+      return React.createElement(
+        "div",
+        { style: errorBoundaryStyle },
+        "KaTeX is not available. LaTeX rendering will not work."
+      );
+    }
+
+    return this.state.hasError
+      ? this.renderErrorDisplay()
+      : this.props.children;
   }
 }
 
 /**
  * A modal-based KaTex editor with real-time KaTeX preview and error handling.
  * Supports syntax validation, resize-aware rendering, and debounced updates.
+ * @extends React.Component
  */
 class LaXModal extends React.Component {
   /**
@@ -617,15 +791,34 @@ class LaXModal extends React.Component {
    */
   constructor(props) {
     super(props);
-    this.state = { 
+    this.state = {
       /** @type {string} Current KaTeX input */
       texInput: props.initialValue || "",
       /** @type {Error|null} Rendering or validation error */
       error: null,
+      /** @type {boolean} Rendering state */
+      isLoading: false,
+      katexAvailable: typeof katex !== "undefined",
     };
+
+    const defaultDebounce = 50;
+    const minDebounce = 0;
+    const maxDebounce = 500;
+
+    let debounceTime =
+      props.debounceTime !== undefined
+        ? Math.max(minDebounce, Math.min(maxDebounce, props.debounceTime))
+        : defaultDebounce;
+
+    this.debounceSettings = { time: debounceTime };
+
     this.katexContainerRef = React.createRef();
-    this.renderKaTeX = this.debounce(this.renderKaTeX.bind(this));
+    this.renderKaTeX = this.debounce(
+      this.renderKaTeX.bind(this),
+      this.debounceSettings
+    ).bind(this);
     this.resizeObserver = null;
+    this.renderDebounceTimer = null;
   }
   /**
    * Debounces a function call by a specified delay.
@@ -633,7 +826,7 @@ class LaXModal extends React.Component {
    * @param {number} [delay=50] - Milliseconds to delay execution.
    * @returns {Function} Debounced function.
    */
-  debounce(func, delay = 50) {
+  debounce(func, delay = this.debounceSettings.time) {
     let timeout;
     return (...args) => {
       clearTimeout(timeout);
@@ -645,9 +838,6 @@ class LaXModal extends React.Component {
    */
   resetPreview = () => {
     this.setState({ value: "" });
-    if (this.previewComponent) {
-      this.previewComponent.forceUpdate(); 
-    }
   };
   /**
    * Sets up ResizeObserver and triggers initial render.
@@ -664,14 +854,14 @@ class LaXModal extends React.Component {
    * Cleans up resources before unmounting.
    */
   componentWillUnmount() {
+    this.cleanupKaTeX();
+    DOMHelper.safeRemoveNode(this.resizeObserver?.element); // Safely cleanup
     if (this.resizeObserver) {
       this.resizeObserver.disconnect();
+      this.resizeObserver = null;
     }
-    this.cleanupKaTeX();
-    
-    if (this.tempElements) {
-      this.tempElements.forEach(el => DOMHelper.safeRemoveNode(el));
-      this.tempElements = [];
+    if (this.renderDebounceTimer) {
+      clearTimeout(this.renderDebounceTimer);
     }
   }
   /**
@@ -680,18 +870,66 @@ class LaXModal extends React.Component {
   cleanupKaTeX() {
     if (this.katexContainerRef?.current) {
       try {
+        // Clear container safely
         const container = this.katexContainerRef.current;
-        container.innerHTML = '';
+        while (container.firstChild) {
+          DOMHelper.safeRemoveChild(container, container.firstChild);
+        }
+
+        // Release references
+        if (this.svgDocument) {
+          this.svgDocument = null;
+        }
       } catch (e) {
-        console.warn('KaTeX container cleanup error:', e);
+        console.warn("KaTeX container cleanup error:", e);
       }
     }
   }
-
+  /**
+   * React lifecycle method called after component updates.
+   * Primary responsibilities:
+   * 1. Detect meaningful state/prop changes
+   * 2. Trigger KaTeX re-renders when formula input changes
+   * 3. Debounce rapid input to optimize performance
+   * 4. Handle potential rendering errors gracefully
+   *
+   * @param {Object} prevProps - Previous props before update
+   * @param {Object} prevState - Previous state before update
+   * @returns {void}
+   */
   componentDidUpdate(prevProps, prevState) {
-    if (prevState.texInput !== this.state.texInput) {
-      this.renderKaTeX();
+    // Only re-render KaTeX if texInput changed and we have a valid container
+    if (
+      prevState.texInput !== this.state.texInput &&
+      this.katexContainerRef.current
+    ) {
+      try {
+        // Debounce rapid input changes to improve performance
+        if (this.renderDebounceTimer) {
+          clearTimeout(this.renderDebounceTimer);
+        }
+        /**
+         * Set new debounce timer to:
+         * - Wait 100ms after last input change
+         * - Handle empty input case immediately
+         * - Only render if component is still mounted
+         */
+        this.renderDebounceTimer = setTimeout(() => {
+          // Skip if input is empty
+          if (!this.state.texInput.trim()) {
+            this.cleanupKaTeX();
+            return;
+          }
+
+          this.renderKaTeX();
+        }, this.debounceSettings.time);
+      } catch (error) {
+        console.error("Error in componentDidUpdate:", error);
+        this.setState({ error });
+      }
     }
+
+    // Clean up timer when component unmounts (handled in componentWillUnmount)
   }
 
   /**
@@ -700,11 +938,11 @@ class LaXModal extends React.Component {
    */
   validateSyntax = () => {
     try {
-      const testEl = document.createElement('div');
+      const testEl = document.createElement("div");
       katex.render(this.state.texInput, testEl, {
         throwOnError: true,
         displayMode: true,
-        strict: true
+        strict: true,
       });
       BdApi.UI.showToast("Valid KaTeX syntax", { type: "success" });
       return true;
@@ -718,23 +956,29 @@ class LaXModal extends React.Component {
    * Handles rendering errors and logs performance metrics.
    */
   renderKaTeX() {
+    if (!this.state.katexAvailable) return;
+    if (!this.state.texInput.trim()) {
+      this.cleanupKaTeX();
+      return;
+    }
+    this.setState({ isLoading: true });
     const startTime = performance.now();
     if (!this.katexContainerRef?.current) return;
-    
+
     const container = this.katexContainerRef.current;
-    
+
     try {
       if (document.body.contains(container)) {
-        container.innerHTML = '';
+        container.innerHTML = "";
       }
     } catch (e) {
-      console.warn('Cleanup error:', e);
+      console.warn("Cleanup error:", e);
     }
 
     if (this.state.texInput.trim()) {
       try {
-        const katexWrapper = document.createElement('div');
-        
+        const katexWrapper = document.createElement("div");
+
         katex.render(this.state.texInput, katexWrapper, {
           throwOnError: false,
           displayMode: true,
@@ -742,19 +986,21 @@ class LaXModal extends React.Component {
           fleqn: true,
           colorIsTextColor: true,
           trust: false,
-          output: 'html'
+          output: "html",
         });
 
         container.innerHTML = katexWrapper.innerHTML;
       } catch (error) {
         console.error("KaTeX render error:", error);
         this.setState({ error });
-        container.innerHTML = '<div style="color: red">Failed to render KaTeX</div>';
+        container.innerHTML =
+          '<div style="color: red">Failed to render KaTeX</div>';
+      } finally {
+        this.setState({ isLoading: false });
+        const endTime = performance.now();
+        console.log(`KaTeX render took ${(endTime - startTime).toFixed(2)}ms`);
       }
     }
-    
-    const endTime = performance.now();
-    console.log(`KaTeX render took ${(endTime - startTime).toFixed(2)}ms`);
   }
   /**
    * Gets the current KaTeX input value, trimmed of whitespace.
@@ -773,7 +1019,7 @@ class LaXModal extends React.Component {
       {
         value: this.state.texInput,
         error: this.state.error,
-        onReset: () => this.setState({ error: null })
+        onReset: () => this.setState({ error: null }),
       },
       null
     );
@@ -788,21 +1034,25 @@ class LaXModal extends React.Component {
    */
   render() {
     return React.createElement(
-      'div',
-      { style: modalContainerStyle, className: 'lax-modal-container' },
+      "div",
+      { style: modalContainerStyle, className: "lax-modal-container" },
       React.createElement(
         LaXErrorBoundary,
         {
           value: this.state.texInput,
           onError: (error) => this.setState({ error }),
-          onReset: () => this.setState({ texInput: '', error: null }, this.renderKaTeX),
+          onReset: () =>
+            this.setState(
+              { texInput: "", error: null, isLoading: false },
+              this.renderKaTeX
+            ),
         },
         // Input Section
         React.createElement(
-          'div',
+          "div",
           null,
-          React.createElement('div', { style: inputLabelStyle }, 'KaTeX Input'),
-          React.createElement('textarea', {
+          React.createElement("div", { style: inputLabelStyle }, "KaTeX Input"),
+          React.createElement("textarea", {
             value: this.state.texInput,
             onChange: (e) => {
               this.setState({
@@ -810,16 +1060,15 @@ class LaXModal extends React.Component {
                 error: null,
               });
               this.props.onUpdate?.(e.target.value);
-              
             },
             style: textAreaStyle,
-            placeholder: "E.g., E = mc^2"
+            placeholder: "E.g., E = mc^2",
           })
         ),
         // Validate Button Row
         React.createElement(
-          'button',
-          { 
+          "button",
+          {
             onClick: () => {
               try {
                 this.validateSyntax();
@@ -827,49 +1076,68 @@ class LaXModal extends React.Component {
                 // This will trigger the error boundary
                 this.setState({ error });
               }
-            }, 
-            style: validateButtonStyle 
+            },
+            style: validateButtonStyle,
           },
-          'Validate Syntax'
+          "Validate Syntax"
         ),
         // Preview Section
         React.createElement(
           LaXErrorBoundary,
           {
-            key: 'preview-boundary',
+            key: "preview-boundary",
             value: this.state.texInput,
             onError: (error) => this.setState({ error }),
-            onReset: this.renderKaTeX
+            onReset: this.renderKaTeX,
           },
           React.createElement(
-            'div',
-            { key: 'preview-section' },
-            React.createElement('div', { style: previewLabelStyle }, 'Preview'),
-            React.createElement('div', {
+            "div",
+            { key: "preview-section" },
+            React.createElement("div", { style: previewLabelStyle }, "Preview"),
+            React.createElement("div", {
               ref: this.katexContainerRef,
-              style: previewBoxStyle
+              style: previewBoxStyle,
             })
           )
         ),
         // Error Display
-        this.state.error && React.createElement("div", {
-          style: {
-            color: 'var(--text-danger)',
-            fontSize: '13px',
-            marginTop: '8px'
-          }
-        }, this.state.error.message)
+        this.state.error &&
+          React.createElement(
+            "div",
+            {
+              style: {
+                color: "var(--text-danger)",
+                fontSize: "13px",
+                marginTop: "8px",
+              },
+            },
+            this.state.error.message
+          ),
+
+        this.state.isLoading &&
+          React.createElement(
+            "div",
+            {
+              style: {
+                textAlign: "center",
+                padding: "8px",
+                color: "var(--text-normal)",
+              },
+            },
+            "Rendering equation..."
+          )
       )
     );
   }
 }
+
 /**
  * Creates a Discord-styled button element using BetterDiscord's theme classes.
  * Useful for integrating plugin UI elements into Discord's interface.
  *
  * @param {Object} params - Button configuration object.
  * @param {Function} params.onClick - Callback function to execute when the button is clicked.
- * 
+ *
  * @returns {HTMLElement} A styled button element compatible with Discord's UI.
  */
 function createLaXButton({ onClick }) {
@@ -881,23 +1149,23 @@ function createLaXButton({ onClick }) {
    * - `colorBrand`: Applies Discord's primary brand color
    */
   // Get Discord's button classes using BetterDiscord's Webpack module finder
-  const discordButtonClasses = BdApi.Webpack.getModule(m => 
-    m.button && m.grow && m.colorBrand
+  const discordButtonClasses = BdApi.Webpack.getModule(
+    (m) => m.button && m.grow && m.colorBrand
   );
-  
+
   // Create the button element
   const LaXButton = document.createElement("button");
   LaXButton.classList.add(
-    discordButtonClasses.button, 
-    discordButtonClasses.grow, 
+    discordButtonClasses.button,
+    discordButtonClasses.grow,
     "BD-LaX-plugin-button"
   );
-  
+
   // Create the inner structure
   const div = document.createElement("div");
   const innerDiv = document.createElement("div");
   innerDiv.classList.add(discordButtonClasses.buttonWrapper);
-  
+
   // Add SVG icon
   innerDiv.innerHTML = texIconSVG.trim();
   const svg = innerDiv.firstElementChild;
@@ -905,18 +1173,19 @@ function createLaXButton({ onClick }) {
   svg.setAttribute("width", "24");
   svg.setAttribute("height", "24");
   svg.setAttribute("viewBox", "0 0 512 512");
-  
+
   // Assemble the elements
   innerDiv.append(svg);
   div.append(innerDiv);
   LaXButton.append(div);
-  
+
   // Add click handler
-  LaXButton.onclick = onClick;
-  
+  LaXButton.onclick = (e) => {
+    onClick(e);
+  };
+
   return LaXButton;
 }
-
 
 /**
  * A BetterDiscord plugin for creating and sending mathematical equations using LaTeX syntax.
@@ -941,13 +1210,14 @@ class LaX {
           {
             name: "Nothing",
             discord_id: "1278640580607479851",
-            github_username: "Josefifir"
-          }
+            github_username: "Josefifir",
+          },
         ],
-        version: "1.0.1",
+        version: "1.0.0",
         description: "Creates and sends TeX math equations.",
         github: "https://github.com/Josefifir/TeX ",
-        github_raw: "https://raw.githubusercontent.com/Josefifir/TeX/TeX.plugin.js "
+        github_raw:
+          "https://raw.githubusercontent.com/Josefifir/TeX/TeX.plugin.js ",
       },
       defaultConfig: [
         {
@@ -955,22 +1225,31 @@ class LaX {
           id: "textColor",
           name: "Text Color",
           note: "Choose the text color for TeX equations.",
-          value: "#ffffff"
-        }
-      ]
+          value: "#ffffff",
+        },
+      ],
     };
     this.settings = this.loadAllSettings();
     this.texInput = "";
     this.canvas = document.createElement("canvas");
     this.canvasContext = this.canvas.getContext("2d");
+    this.svgDocument = null;
     this.LaXButton = null;
-    this.persistentSettings = BdApi.Data.load(this.constructor.name, "persistentSettings") || {};
+    this.persistentSettings =
+      BdApi.Data.load(this.constructor.name, "persistentSettings") || {};
     this.cachedElements = {
       webpackModules: null,
-      domElements: {}
+      domElements: {},
+    };
+    this.resources = {
+      elements: new Set(),
+      observers: new Set(),
+      timeouts: new Set(),
     };
     if (!this.persistentSettings.textColor) {
-      this.persistentSettings.textColor = this.config.defaultConfig.find(c => c.id === "textColor").value;
+      this.persistentSettings.textColor = this.config.defaultConfig.find(
+        (c) => c.id === "textColor"
+      ).value;
     }
   }
 
@@ -978,12 +1257,12 @@ class LaX {
    * Clears cached DOM elements to prevent memory leaks.
    */
   clearCache() {
-    Object.values(this.cachedElements.domElements).forEach(el => {
+    Object.values(this.cachedElements.domElements).forEach((el) => {
       DOMHelper.safeRemoveNode(el);
     });
     this.cachedElements = {
       webpackModules: null,
-      domElements: {}
+      domElements: {},
     };
   }
 
@@ -993,16 +1272,17 @@ class LaX {
    */
   loadAllSettings() {
     const savedConfig = BdApi.Data.load(this.constructor.name, "config") || {};
-    const savedSettings = BdApi.Data.load(this.constructor.name, "settings") || {};
+    const savedSettings =
+      BdApi.Data.load(this.constructor.name, "settings") || {};
     return {
       config: {
         ...this.config.defaultConfig.reduce((acc, curr) => {
           acc[curr.id] = curr.value;
           return acc;
         }, {}),
-        ...savedConfig
+        ...savedConfig,
       },
-      settings: savedSettings
+      settings: savedSettings,
     };
   }
 
@@ -1020,12 +1300,12 @@ class LaX {
   async start() {
     BdApi.DOM.addStyle(this.constructor.name, css);
     this.LaXButton = createLaXButton({
-      onClick: () => this.showLaXModal()
+      onClick: () => this.showLaXModal(),
     });
     BdApi.UI.showToast(`${this.constructor.name} has started!`);
 
-    const TextareaClasses = BdApi.Webpack.getModule(m =>
-      m.textArea?.value?.includes?.('textArea__'),
+    const TextareaClasses = BdApi.Webpack.getModule(
+      (m) => m.textArea?.value?.includes?.("textArea__"),
       { searchExports: true }
     ) || {
       channelTextArea: { value: "channelTextArea__74017" },
@@ -1033,12 +1313,16 @@ class LaX {
       buttons: { value: "buttons__74017" },
     };
 
-    while (!document.querySelector(`.${TextareaClasses.channelTextArea.value} .${TextareaClasses.buttons.value}`)) {
+    while (
+      !document.querySelector(
+        `.${TextareaClasses.channelTextArea.value} .${TextareaClasses.buttons.value}`
+      )
+    ) {
       await this.delay(500);
     }
 
     this.injectButton();
-    this.attachments = BdApi.Webpack.getByKeys('addFiles');
+    this.attachments = BdApi.Webpack.getByKeys("addFiles");
 
     const css1 = `
       .lax-settings-minimal { padding: 16px; background: var(--background-tertiary); border-radius: 8px; width: 300px; display: flex; flex-direction: column; gap: 16px; }
@@ -1056,11 +1340,14 @@ class LaX {
 
     BdApi.DOM.addStyle("LaX-settings-styles", css1);
 
-    const versionInfo = BdApi.Data.load(this.constructor.name, "versionInfo") || {};
-    if (this.hasVersionChanged(versionInfo.version, this.config?.info.version)) {
+    const versionInfo =
+      BdApi.Data.load(this.constructor.name, "versionInfo") || {};
+    if (
+      this.hasVersionChanged(versionInfo.version, this.config?.info.version)
+    ) {
       this.showChangeLogModal();
       BdApi.Data.save(this.constructor.name, "versionInfo", {
-        version: this.config?.info.version
+        version: this.config?.info.version,
       });
     }
 
@@ -1078,21 +1365,22 @@ class LaX {
     BdApi.DOM.removeStyle(this.constructor.name);
     BdApi.Patcher.unpatchAll(this.constructor.name);
     this.resetLaXFontColor();
-    
+
     // Clean up DOM elements
     this.componentWillUnmount();
 
     if (this.cachedElements) {
       // Clean up DOM elements
-      Object.values(this.cachedElements.domElements).forEach(element => {
+      Object.values(this.cachedElements.domElements).forEach((element) => {
         if (element?.parentNode) {
           DOMHelper.safeRemoveNode(element);
         }
       });
       this.clearCache();
     }
-    
-    BdApi.UI.showToast(`${this.constructor.name} has stopped!`);  }
+
+    BdApi.UI.showToast(`${this.constructor.name} has stopped!`);
+  }
 
   /**
    * Cleans up resources before unmounting or stopping.
@@ -1100,21 +1388,36 @@ class LaX {
   componentWillUnmount() {
     this.resizeObserver?.disconnect();
     this.observer?.disconnect();
-    Object.values(this.cachedElements.domElements).forEach(el => {
+    Object.values(this.cachedElements.domElements).forEach((el) => {
       DOMHelper.safeRemoveNode(el);
     });
-    if (this.svgDocument) this.svgDocument = null;
+    // Clean up DOM elements
+    this.resources.elements.forEach((el) => {
+      if (el?.parentNode) DOMHelper.safeRemoveNode(el);
+    });
+    this.resources.elements.clear();
+
+    // Clean up observers
+    this.resources.observers.forEach((obs) => obs.disconnect());
+    this.resources.observers.clear();
+
+    // Clean up timeouts
+    this.resources.timeouts.forEach((t) => clearTimeout(t));
+    this.resources.timeouts.clear();
+
+    // Canvas cleanup
     if (this.canvas) {
+      const ctx = this.canvas.getContext("2d");
+      ctx?.clearRect(0, 0, this.canvas.width, this.canvas.height);
       this.canvas.width = 0;
       this.canvas.height = 0;
-      const ctx = this.canvas.getContext('d2');
-      ctx?.clearRect(0, 0, 0, 0);
       this.canvas = null;
     }
+    if (this.svgDocument) this.svgDocument = null;
     this.canvasContext = null;
-    this.LaXButton?.removeEventListener?.('click', this.handleClick);
-    this.LaXButton?.remove?.();
+    DOMHelper.safeRemoveNode(this.LaXButton);
     this.LaXButton = null;
+    DOMHelper.cleanup();
   }
 
   /**
@@ -1125,8 +1428,8 @@ class LaX {
    */
   hasVersionChanged(oldVer, newVer) {
     if (!oldVer) return true;
-    const oldParts = oldVer.split('.').map(Number);
-    const newParts = newVer.split('.').map(Number);
+    const oldParts = oldVer.split(".").map(Number);
+    const newParts = newVer.split(".").map(Number);
     for (let i = 0; i < Math.max(oldParts.length, newParts.length); i++) {
       const oldPart = oldParts[i] || 0;
       const newPart = newParts[i] || 0;
@@ -1139,89 +1442,213 @@ class LaX {
    * Applies the selected font color to LaTeX output.
    */
   applyLaXFontColor() {
-    const LAXSettings = BdApi.Data.load(this.constructor.name, "settings") || {};
+    const LAXSettings =
+      BdApi.Data.load(this.constructor.name, "settings") || {};
     LAXSettings.FontColor = this.persistentSettings.textColor;
     BdApi.Data.save(this.constructor.name, "settings", LAXSettings);
-    BdApi.UI.showToast("LaX font color updated successfully!", { type: "success" });
+    BdApi.UI.showToast("LaX font color updated successfully!", {
+      type: "success",
+    });
   }
 
   /**
    * Resets font color to previously saved value.
    */
   resetLaXFontColor() {
-    const LAXSettings = BdApi.Data.load("LaX", "settings") || {};
-    LAXSettings.FontColor = this.persistentSettings.textColor;
-    BdApi.Data.save(this.constructor.name, "settings", LAXSettings);
-    BdApi.UI.showToast("LaX font color reloaded.", { type: "info" });
+    const defaultColor = this.config.defaultConfig.find(
+      (c) => c.id === "textColor"
+    ).value;
+    this.persistentSettings.textColor = defaultColor;
+
+    const settings = BdApi.Data.load(this.constructor.name, "settings") || {};
+    settings.FontColor = defaultColor;
+    BdApi.Data.save(this.constructor.name, "settings", settings);
+    BdApi.Data.save(
+      this.constructor.name,
+      "persistentSettings",
+      this.persistentSettings
+    );
+
+    BdApi.UI.showToast("Reset to default color!", { type: "success" });
+    return defaultColor; // Return the new color for UI updates
   }
 
   /**
-   * Renders the plugin settings panel in BetterDiscord UI.
-   * @returns {React.ReactNode} Settings panel JSX.
+   * Creates and returns a settings panel component for configuring plugin settings.
+   * The panel includes color settings for equations and action buttons (Save/Reset).
+   *
+   * @returns {React.Component} A React component that renders the settings panel and manages the DOM manipulation for adding action buttons to the modal footer.
    */
+
   getSettingsPanel() {
-    return React.createElement(React.Fragment, null,
-      React.createElement("h3", {
-        style: {
-          color: "var(--header-primary)",
-          margin: "0 0 16px 0",
-          textAlign: "center",
-          fontSize: "16px",
-          fontWeight: 600
-        }
-      }, "LaX Settings"),
-      React.createElement("div", {
-        style: {
-          color: "var(--text-muted)",
-          fontSize: "12px",
-          fontWeight: 700,
-          textTransform: "uppercase",
-          letterSpacing: "0.5px",
-          marginBottom: "8px"
-        }
-      }, "EQUATION COLOR"),
-      React.createElement("input", {
+    let settingsPanelInstance = null;
+    // Add debounceTime to persistent settings if it doesn't exist
+    if (typeof this.persistentSettings.debounceTime === "undefined") {
+      this.persistentSettings.debounceTime = 50; // Default 50ms
+    }
+
+    // Create settings configuration
+    const settingsConfig = [
+      {
         type: "color",
-        value: this.persistentSettings.textColor,
-        style: {
-          width: "100%",
-          height: "32px",
-          borderRadius: "4px",
-          border: "1px solid var(--background-modifier-accent)",
-          cursor: "pointer",
-          marginBottom: "16px"
+        id: "textColor",
+        name: "Equation Color",
+        note: "Color for rendered equations",
+        value: this.persistentSettings.textColor || "#ffffff",
+        collapsible: true,
+        shown: false,
+      },
+      {
+        type: "slider",
+        id: "debounceTime",
+        name: "Render Delay",
+        note: "Time (ms) to wait after typing before rendering (0-500ms)",
+        min: 0,
+        max: 500,
+        markers: [0, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500],
+        default: 50,
+        value: this.persistentSettings.debounceTime,
+        collapsible: true,
+        shown: false,
+        onValueChange: (value) => {
+          this.persistentSettings.debounceTime = value;
         },
-        onChange: (e) => {
-          this.persistentSettings.textColor = e.target.value;
-          e.target.style.backgroundColor = e.target.value;
-        }
-      }),
-      React.createElement("div", {
+      },
+    ];
+
+    // Create our action buttons
+    const SaveButton = React.createElement(
+      "button",
+      {
+        onClick: () => {
+          BdApi.Data.save(
+            this.constructor.name,
+            "persistentSettings",
+            this.persistentSettings
+          );
+          this.applyLaXFontColor();
+          BdApi.UI.showToast("Settings saved successfully!", {
+            type: "success",
+          });
+        },
+        className:
+          "bd-button bd-button-filled bd-button-color-green bd-button-medium",
         style: {
-          display: "flex",
-          gap: "8px"
+          marginRight: "8px",
+        },
+      },
+      React.createElement("div", { className: "bd-button-content" }, "Save")
+    );
+
+    const ResetButton = React.createElement(
+      "button",
+      {
+        onClick: () => {
+          const defaultColor = this.config.defaultConfig.find(
+            (c) => c.id === "textColor"
+          ).value;
+          const defaultDebounce = 50;
+
+          // Update persistent settings
+          this.persistentSettings.textColor = defaultColor;
+          this.persistentSettings.debounceTime = defaultDebounce;
+
+          // Update the settings panel UI
+          if (settingsPanelInstance) {
+            settingsPanelInstance.setState({
+              settings: settingsConfig.map((setting) => {
+                if (setting.id === "textColor") {
+                  return { ...setting, value: defaultColor };
+                } else if (setting.id === "debounceTime") {
+                  return { ...setting, value: defaultDebounce };
+                }
+                return setting;
+              }),
+            });
+          }
+
+          BdApi.UI.showToast("Settings reset to defaults!", { type: "info" });
+        },
+        className:
+          "bd-button bd-button-filled bd-button-color-red bd-button-medium",
+      },
+      React.createElement("div", { className: "bd-button-content" }, "Reset")
+    );
+
+    // Create the settings panel
+    const panel = BdApi.UI.buildSettingsPanel({
+      onChange: (_, id, value) => {
+        if (id === "textColor") {
+          this.persistentSettings.textColor = value;
+        } else if (id === "debounceTime") {
+          this.persistentSettings.debounceTime = value;
         }
       },
-        React.createElement("button", {
-          style: {
-            flex: 1,
-            padding: "8px",
-            background: "var(--brand-experiment)",
-            color: "white",
-            border: "none",
-            borderRadius: "3px",
-            cursor: "pointer",
-            fontWeight: 500
-          },
-          onClick: () => {
-            BdApi.Data.save(this.constructor.name, "persistentSettings", this.persistentSettings);
-            BdApi.UI.showToast("Settings saved", { type: "success" });
-          }
-        }, "Apply Settings"),
-      )
-    );
-  }
+      settings: settingsConfig,
+    });
 
+    /**
+     * A React component that handles the rendering of the settings panel
+     * and manages the DOM manipulation for adding action buttons.
+     */
+    return class extends React.Component {
+      constructor(props) {
+        super(props);
+        this.state = {
+          settings: settingsConfig,
+        };
+        settingsPanelInstance = this;
+      }
+
+      componentDidMount() {
+        setTimeout(() => {
+          const footer = document.querySelector(".bd-modal-footer");
+          if (!footer) return;
+
+          // Check if we've already added our buttons
+          if (footer.querySelector(".BD-LaX-button-group")) return;
+
+          const buttonGroup = document.createElement("div");
+          buttonGroup.className = "BD-LaX-button-group";
+          buttonGroup.style.display = "flex";
+          buttonGroup.style.gap = "8px";
+          buttonGroup.style.marginLeft = "auto";
+
+          // Create containers for our buttons
+          const saveContainer = document.createElement("div");
+          const resetContainer = document.createElement("div");
+
+          // Use createRoot for React 19
+          const saveRoot = ReactDOM.createRoot(saveContainer);
+          saveRoot.render(SaveButton);
+
+          const resetRoot = ReactDOM.createRoot(resetContainer);
+          resetRoot.render(ResetButton);
+
+          buttonGroup.appendChild(saveContainer);
+          buttonGroup.appendChild(resetContainer);
+
+          // Find the existing Done button container
+          const doneButton = footer.querySelector(".bd-button");
+
+          // Safely insert our buttons
+          if (doneButton && doneButton.parentNode === footer) {
+            footer.insertBefore(buttonGroup, doneButton);
+          } else {
+            // Fallback if Done button structure is different
+            footer.appendChild(buttonGroup);
+          }
+
+          footer.style.justifyContent = "flex-end";
+          footer.style.gap = "16px";
+        }, 100);
+      }
+
+      render() {
+        return panel;
+      }
+    };
+  }
   /**
    * Called when switching channels or guilds. Re-injects the LaTeX button.
    */
@@ -1235,72 +1662,128 @@ class LaX {
   showChangeLogModal() {
     BdApi.UI.showChangelogModal({
       title: `${this.constructor.name} v${this.config?.info.version} Changelog`,
-      subtitle: "Big changes",
-      blurb: "**Thank you for updating! Here's what's new:**",
+      subtitle: "Enhanced LaTeX Experience",
+      blurb: "**Thank you for updating! Here's what's new and improved:**",
       changes: [
         {
-          title: "New Features",
+          title: "New Features & Improvements",
           type: "added",
           items: [
-            "**New** UI!",
-            "**New** Customizable settings panel 🛠️",
-            "**New** Error boundry"
+            "**Complete UI Overhaul** with modern Discord styling",
+            "**Advanced Settings Panel** with color picker and render delay controls",
+            "**Sophisticated Error Boundary** with detailed error messages and suggestions",
+            "**Live Preview** of LaTeX equations as you type",
+            "**Syntax Validation** to catch errors before sending",
+            "**Debounced Rendering** for smoother performance while typing",
+            "**Customizable Equation Color** in settings",
+            "**Render Delay Adjustment** for performance tuning",
+            "**Persistent Input** - remembers your last equation between sessions",
           ],
-          blurb: "More control than ever!"
+          blurb: "More powerful and user-friendly than ever!",
         },
         {
-          title: "Bug Fixes",
+          title: "Bug Fixes & Stability",
           type: "fixed",
           items: [
-            "Fixed some problems with the font layout",
-            "Fixed the NULL icon",
-            "Fixing the image attachment function",
-            "Fixed React errors"
-          ]
+            "Fixed all memory leaks and improved resource cleanup",
+            "Resolved NULL icon issues",
+            "Improved image attachment reliability",
+            "Fixed React reconciliation errors",
+            "Patched DOM manipulation edge cases",
+            "Fixed settings reset functionality",
+            "Resolved canvas rendering artifacts",
+            "Fixed error boundary state management",
+          ],
+          blurb: "Smoother operation and fewer crashes",
+        },
+        {
+          title: "Performance Optimizations",
+          type: "progress",
+          items: [
+            "**Optimized KaTeX Rendering** with intelligent debouncing",
+            "**Cached Canvas** for faster equation generation",
+            "**Sanitized KaTeX Container** for security",
+            "**Efficient DOM Management** with helper class",
+            "**Reduced Re-renders** with proper React lifecycle management",
+            "**Optimized SVG Generation** for better image quality",
+            "**Improved Error Handling** with detailed diagnostics",
+            "**Streamlined Settings Management** with persistent storage",
+          ],
+          blurb: "Faster rendering and lower resource usage",
         },
         {
           title: "Under the Hood",
           type: "progress",
           items: [
-            "No more memory leaks",
-            "Rewrote the code again",
-            "DOM manipulation",
-            "The KaTeX container is now sanitized",
-            "Better performance",
-            "Canvas is now cached"
-          ]
-        }
+            "Complete codebase refactoring",
+            "Implemented singleton DOM helper class",
+            "Added comprehensive error boundaries",
+            "Enhanced settings persistence",
+            "Improved React component architecture",
+            "Added performance metrics logging",
+            "Implemented proper cleanup lifecycle",
+            "Added version change detection",
+          ],
+          blurb: "More maintainable and extensible codebase",
+        },
       ],
-      footer: "Report issues on GitHub! ❤️"
-    })
+      footer: "Found a bug or have a suggestion? Report it on GitHub! ❤️",
+    });
+    const modifyFooter = () => {
+      // Find the footer element
+      const footer = document.querySelector(".bd-modal-footer .bd-flex-child");
+      if (footer) {
+        footer.style.color = "white";
+        if (footer.innerHTML.includes("❤️")) {
+          footer.innerHTML = footer.innerHTML.replace(
+            "❤️",
+            '<span style="color: #ff4d4d;">❤️</span>'
+          );
+        }
+      } else {
+        // If not found immediately, try again after a short delay
+        setTimeout(modifyFooter, 100);
+      }
+    };
+    // Start trying to modify the footer
+    modifyFooter();
   }
 
   /**
    * Shows LaTeX input modal for creating equations.
    */
   showLaXModal() {
-    const savedInput = BdApi.Data.load(this.constructor.name, "lastLaXInput") || this.texInput || "";
-    console.log("Saved Input:", savedInput); 
+    const savedInput =
+      BdApi.Data.load(this.constructor.name, "lastLaXInput") ||
+      this.texInput ||
+      "";
+
+    const DebounceSettings =
+      BdApi.Data.load(this.constructor.name, "persistentSettings") || {};
+    console.log("Saved Input:", savedInput);
     let modalInstance = null;
     let currentInputValue = savedInput;
 
     BdApi.UI.showConfirmationModal(
       `${this.constructor.name} Input`,
-      React.createElement(LaXErrorBoundary, null,
+      React.createElement(
+        LaXErrorBoundary,
+        null,
         React.createElement(LaXModal, {
-          ref: ref => modalInstance = ref,
+          ref: (ref) => (modalInstance = ref),
           initialValue: savedInput,
+          debounceTime: DebounceSettings.debounceTime || 50,
           onUpdate: (val) => {
             this.texInput = val;
             currentInputValue = val;
             BdApi.Data.save(this.constructor.name, "lastLaXInput", val);
-          }
+          },
         })
       ),
       {
         confirmText: "Attach",
         onConfirm: async () => {
-          const currentInput = this.laXModalRef?.getValue() || this.texInput || currentInputValue || "";
+          const currentInput = this.texInput || currentInputValue || "";
           if (!currentInput.trim()) {
             BdApi.UI.showToast("Please enter an equation", { type: "error" });
             return;
@@ -1317,6 +1800,7 @@ class LaX {
           } catch (error) {
             console.error("Attachment failed:", error);
             BdApi.UI.showToast("Failed to attach equation", { type: "error" });
+            throw error;
           }
         },
         onCancel: () => {
@@ -1327,10 +1811,7 @@ class LaX {
         onUpdate: (val) => {
           this.texInput = val;
           BdApi.Data.save(this.constructor.name, "lastLaXInput", val);
-          if (this.texInput.trim() === "" && this.laXModalRef) {
-            this.laXModalRef.resetPreview();
-          }
-        }
+        },
       }
     );
   }
@@ -1366,31 +1847,41 @@ class LaX {
 
       if (!this.svgDocument) {
         this.svgDocument = document.implementation.createHTMLDocument();
-        this.svgDocument.write('<html><body></body></html>');
+        this.svgDocument.write("<html><body></body></html>");
         this.svgDocument.close();
       }
 
-      tempContainer = this.svgDocument.createElement('div');
+      tempContainer = this.svgDocument.createElement("div");
       tempContainer.innerHTML = this.sanitizeKaTeXOutput(html);
 
       const dangerousElements = tempContainer.querySelectorAll(
         'script, iframe, frame, object, embed, link[rel="import"]'
       );
-      dangerousElements.forEach(el => el.remove());
+      dangerousElements.forEach((el) => el.remove());
 
       while (this.svgDocument.body.firstChild) {
-        DOMHelper.safeRemoveChild(this.svgDocument.body, this.svgDocument.body.firstChild);
+        DOMHelper.safeRemoveChild(
+          this.svgDocument.body,
+          this.svgDocument.body.firstChild
+        );
       }
 
       this.svgDocument.body.appendChild(tempContainer);
-      this.svgDocument.documentElement.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+      this.svgDocument.documentElement.setAttribute(
+        "xmlns",
+        "http://www.w3.org/2000/svg"
+      );
       this.svgDocument.body.setAttribute("style", "margin:0");
 
-      const serialized = new XMLSerializer().serializeToString(tempContainer)
+      const serialized = new XMLSerializer()
+        .serializeToString(tempContainer)
         .replace(/#/g, "%23")
-        .replace(/javascript:/gi, 'blocked:')
+        .replace(/javascript:/gi, "blocked:")
         .replace(/<style>(.*?)<\/style>/gis, (match, css) => {
-          return `<style>${css.replace(/@font-face\s*\{[^}]+\}/gi, '')}</style>`;
+          return `<style>${css.replace(
+            /@font-face\s*\{[^}]+\}/gi,
+            ""
+          )}</style>`;
         });
 
       svgData = `data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" width="${scaledWidth}" height="${scaledHeight}"><foreignObject width="100%" height="100%"><style>body{margin:0;}</style>${serialized}</foreignObject></svg>`;
@@ -1413,7 +1904,7 @@ class LaX {
 
       const ctx = canvas.getContext("2d");
       ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = 'high';
+      ctx.imageSmoothingQuality = "high";
       ctx.translate(0.5, 0.5);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(image, 0, 0, scaledWidth, scaledHeight);
@@ -1428,7 +1919,7 @@ class LaX {
       if (image) {
         image.onload = null;
         image.onerror = null;
-        image.src = '';
+        image.src = "";
       }
       URL.revokeObjectURL(svgData);
       svgData = null;
@@ -1443,37 +1934,69 @@ class LaX {
    * @returns {string} Sanitized HTML.
    */
   sanitizeKaTeXOutput(html) {
-    if (html.includes('<svg') || html.includes('<math')) {
-      return html.replace(/javascript:/gi, 'blocked:')
-                .replace(/on\w+="[^"]*"/gi, '');
+    if (html.includes("<svg") || html.includes("<math")) {
+      return html
+        .replace(/javascript:/gi, "blocked:")
+        .replace(/on\w+="[^"]*"/gi, "");
     }
 
-    const div = document.createElement('div');
+    const div = document.createElement("div");
     div.innerHTML = html;
 
-    const allowedAttributes = ['class', 'style', 'aria-hidden', 'xmlns', 'viewBox', 'width', 'height', 'fill', 'd'];
+    const allowedAttributes = [
+      "class",
+      "style",
+      "aria-hidden",
+      "xmlns",
+      "viewBox",
+      "width",
+      "height",
+      "fill",
+      "d",
+    ];
     const allowedStyleProps = new Set([
-      'color', 'background-color', 'font', 'font-family', 'font-size',
-      'font-weight', 'font-style', 'text-align', 'line-height', 'vertical-align',
-      'white-space', 'margin', 'padding', 'border', 'display',
-      'position', 'top', 'left', 'right', 'bottom',
-      'width', 'height', 'min-width', 'min-height', 'max-width', 'max-height',
+      "color",
+      "background-color",
+      "font",
+      "font-family",
+      "font-size",
+      "font-weight",
+      "font-style",
+      "text-align",
+      "line-height",
+      "vertical-align",
+      "white-space",
+      "margin",
+      "padding",
+      "border",
+      "display",
+      "position",
+      "top",
+      "left",
+      "right",
+      "bottom",
+      "width",
+      "height",
+      "min-width",
+      "min-height",
+      "max-width",
+      "max-height",
     ]);
-    const isSafeStyleValue = value =>
+    const isSafeStyleValue = (value) =>
       !/javascript:|expression\(|url\((["']?)javascript:/i.test(value);
 
-    div.querySelectorAll('*').forEach(el => {
-      [...el.attributes].forEach(attr => {
+    div.querySelectorAll("*").forEach((el) => {
+      [...el.attributes].forEach((attr) => {
         const name = attr.name.toLowerCase();
         const value = attr.value;
-        if (name.startsWith('on') || /javascript:/i.test(value)) {
+        if (name.startsWith("on") || /javascript:/i.test(value)) {
           el.removeAttribute(attr.name);
           return;
         }
-        if (name === 'style') {
+        if (name === "style") {
           const newStyle = [];
-          el.style.cssText.split(';').forEach(rule => {
-            const [prop, val] = rule.split(':');
+          el.style.cssText.split(";").forEach((rule) => {
+            const [prop, val] = rule.split(":");
             if (!prop || !val) return;
             const key = prop.trim().toLowerCase();
             const safeVal = val.trim();
@@ -1481,13 +2004,10 @@ class LaX {
               newStyle.push(`${key}: ${safeVal}`);
             }
           });
-          el.setAttribute('style', newStyle.join('; '));
+          el.setAttribute("style", newStyle.join("; "));
           return;
         }
-        if (
-          !allowedAttributes.includes(name) &&
-          !name.startsWith('data-')
-        ) {
+        if (!allowedAttributes.includes(name) && !name.startsWith("data-")) {
           el.removeAttribute(attr.name);
         }
       });
@@ -1500,20 +2020,41 @@ class LaX {
    * @returns {Promise<Blob>} Generated image as Blob.
    */
   async generateLaXImage() {
+    // Add katex availability check
+    if (typeof katex === "undefined") {
+      throw new Error("KaTeX is not available");
+    }
+
     if (!this.cachedElements.webpackModules) {
       this.cachedElements.webpackModules = {
-        SelectedChannelStore: BdApi.Webpack.getModule(m => m.getChannelId && m.getLastSelectedChannelId),
+        SelectedChannelStore: BdApi.Webpack.getModule(
+          (m) => m.getChannelId && m.getLastSelectedChannelId
+        ),
       };
     }
     if (!this.canvas || !(this.canvas instanceof HTMLCanvasElement)) {
-        this.canvas = document.createElement("canvas");
-        console.log("Recreated canvas element");
+      this.canvas = document.createElement("canvas");
+      this.canvasContext = this.canvas.getContext("2d");
+      if (!this.canvasContext) {
+        throw new Error("Could not get canvas context");
       }
+    }
+    // Add attachment availability check
+    if (!this.attachments) {
+      this.attachments = BdApi.Webpack.getByKeys("addFiles");
+      if (!this.attachments) {
+        throw new Error("Could not find attachments module");
+      }
+    }
     let renderTarget = null;
+    let tempElements = [];
     try {
-      renderTarget = this.cachedElements.domElements.renderTarget || document.createElement("div");
+      renderTarget =
+        this.cachedElements.domElements.renderTarget ||
+        document.createElement("div");
       renderTarget.classList.add("BD-LaX-plugin", "BD-LaX-plugin-image-render");
       this.cachedElements.domElements.renderTarget = renderTarget;
+      tempElements.push(renderTarget);
       katex.render(this.texInput, renderTarget, {
         throwOnError: true,
         displayMode: true,
@@ -1521,14 +2062,16 @@ class LaX {
         fleqn: false,
         colorIsTextColor: true,
         trust: false,
-        output: 'htmlAndMathml',
+        output: "htmlAndMathml",
       });
 
       document.body.append(renderTarget);
 
-      const katexStyles = Array.from(document.querySelectorAll('link[href*="katex"], style'))
-        .map(el => el.outerHTML)
-        .join('\n');
+      const katexStyles = Array.from(
+        document.querySelectorAll('link[href*="katex"], style')
+      )
+        .map((el) => el.outerHTML)
+        .join("\n");
 
       const customCSS = `
         .katex {
@@ -1540,43 +2083,63 @@ class LaX {
         }
       `;
 
-      const html = `${katexStyles}<style type="text/css">${customCSS}</style>` + renderTarget.outerHTML;
+      const html =
+        `${katexStyles}<style type="text/css">${customCSS}</style>` +
+        renderTarget.outerHTML;
       const rect = renderTarget.getBoundingClientRect();
       const katexHtml = renderTarget.querySelector(".katex-html");
-      const width = Math.ceil(rect.width) + (katexHtml ? katexHtml.children.length - 1 : 0);
+      const width =
+        Math.ceil(rect.width) + (katexHtml ? katexHtml.children.length - 1 : 0);
       const height = Math.ceil(rect.height);
 
       await this.htmlToCanvas(html, this.canvas, width, height);
 
-      return new Promise((resolve, reject) => {
-        this.canvas.toBlob(blob => {
-          if (!blob) {
-            reject(new Error("Failed to generate image blob"));
-            return;
-          }
-          resolve(blob);
-        }, "image/png", 0.95);
+      return await new Promise((resolve, reject) => {
+        const timer = setTimeout(() => {
+          reject(new Error("Image generation timeout"));
+        }, 10000);
+        this.resources.timeouts.add(timer);
+
+        this.canvas.toBlob(
+          (blob) => {
+            clearTimeout(timer);
+            this.resources.timeouts.delete(timer);
+
+            if (!blob) {
+              reject(new Error("Canvas toBlob failed"));
+              return;
+            }
+            resolve(blob);
+          },
+          "image/png",
+          0.95
+        );
       });
     } catch (error) {
       DOMHelper.safeRemoveNode(renderTarget);
-      renderTarget.innerHTML = '';
+      renderTarget.innerHTML = "";
       console.error("Error generating LaX image:", error);
-      BdApi.UI.showToast("Failed to generate equation image", { type: "error" });
+      BdApi.UI.showToast("Failed to generate equation image", {
+        type: "error",
+      });
       throw error;
     } finally {
       if (renderTarget?.parentNode) {
         try {
-          renderTarget.remove();
+          DOMHelper.safeRemoveNode(renderTarget)
         } catch (e) {
-          console.warn('Error removing render target:', e);
+          console.warn("Error removing render target:", e);
         }
+        tempElements.forEach((el) => {
+          if (el?.parentNode) DOMHelper.safeRemoveNode(el);
+        });
       }
       if (this.canvas) {
         try {
-          const ctx = this.canvas.getContext('2d');
+          const ctx = this.canvas.getContext("2d");
           ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-        } catch(e) {
-          console.warn('Error cleaning canvas:', e);
+        } catch (e) {
+          console.warn("Error cleaning canvas:", e);
         }
       }
     }
@@ -1589,33 +2152,52 @@ class LaX {
   attachImage(blob) {
     function formatDateToDDMMYYYYSSMS(timestamp) {
       const date = new Date(timestamp);
-      const day = String(date.getDate()).padStart(2, '0');
-      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, "0");
+      const month = String(date.getMonth() + 1).padStart(2, "0");
       const year = date.getFullYear();
-      const seconds = String(date.getSeconds()).padStart(2, '0');
-      const milliseconds = String(date.getMilliseconds()).padStart(2, '0');
+      const seconds = String(date.getSeconds()).padStart(2, "0");
+      const milliseconds = String(date.getMilliseconds()).padStart(2, "0");
       return `${day}-${month}-${year}-${seconds}-${milliseconds}`;
     }
 
     const timestamp = Date.now();
     const formattedDate = formatDateToDDMMYYYYSSMS(timestamp);
-    const SelectedChannelStore = BdApi.Webpack.getModule(m => m.getChannelId && m.getLastSelectedChannelId);
-    const channelId = SelectedChannelStore.getChannelId();
-    const file = new File([blob], `LaX-output-${formattedDate}.png`, {type: 'image/png'});
-    this.attachments.addFiles({
-      channelId: channelId,
-      draftType: 0,
-      files: [{file: file, isClip: false, isThumbnail: false, platform: 1}],
-      showLargeMessageDialog: false
-    });
+    try {
+      const SelectedChannelStore = BdApi.Webpack.getModule(
+        (m) => m.getChannelId && m.getLastSelectedChannelId
+      ) || {
+        getChannelId: () => {
+          throw new Error("Channel store not available");
+        },
+      };
+
+      const channelId = SelectedChannelStore.getChannelId();
+      if (!channelId) {
+        throw new Error("No channel selected");
+      }
+
+      const file = new File([blob], `LaX-output-${formattedDate}.png`, {
+        type: "image/png",
+      });
+      this.attachments.addFiles({
+        channelId: channelId,
+        draftType: 0,
+        files: [{ file: file, isClip: false, isThumbnail: false, platform: 1 }],
+        showLargeMessageDialog: false,
+      });
+    } catch {
+      console.error("Attachment failed:", error);
+      BdApi.UI.showToast("Failed to attach equation", { type: "error" });
+      throw error;
+    }
   }
 
   /**
    * Injects LaTeX button into Discord's message composer.
    */
   injectButton() {
-    const TextareaClasses = BdApi.Webpack.getModule(m =>
-      m.textArea?.value?.includes?.('textArea__'),
+    const TextareaClasses = BdApi.Webpack.getModule(
+      (m) => m.textArea?.value?.includes?.("textArea__"),
       { searchExports: true }
     ) || {
       channelTextArea: { value: "channelTextArea__74017" },
@@ -1631,7 +2213,7 @@ class LaX {
       this.observer.observe(document.body, {
         childList: true,
         subtree: true,
-        attributes: false
+        attributes: false,
       });
     }
   }
@@ -1642,8 +2224,14 @@ class LaX {
    */
   tryInjectButton(selector) {
     const buttonsContainer = document.querySelector(selector);
-    if (!buttonsContainer || buttonsContainer.querySelector('.BD-LaX-plugin-button')) return;
-    const existingButton = buttonsContainer.querySelector('.BD-LaX-plugin-button');
+    if (
+      !buttonsContainer ||
+      buttonsContainer.querySelector(".BD-LaX-plugin-button")
+    )
+      return;
+    const existingButton = buttonsContainer.querySelector(
+      ".BD-LaX-plugin-button"
+    );
     if (existingButton) {
       DOMHelper.safeRemoveChild(buttonsContainer, existingButton);
     }
@@ -1658,10 +2246,11 @@ class LaX {
    * @returns {Promise<void>}
    */
   delay(ms) {
-    return new Promise(resolve => {
+    return new Promise((resolve) => {
       setTimeout(resolve, ms);
     });
   }
 }
 
 module.exports = LaX;
+/*@end@*/
