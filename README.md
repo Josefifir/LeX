@@ -1,6 +1,6 @@
-# LeX - LaTeX Math Equations Generator
+# LaX - LaTeX Math Equations Generator
 
-LeX is a tool designed to create and send LaTeX math equations with ease.
+LaX is a tool designed to create and send LaTeX math equations with ease.
 
 ## Features
 - Generates LaTeX-based mathematical equations
