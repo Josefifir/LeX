@@ -34,7 +34,22 @@ const filesToInclude = {
       file: "./src/external/katex/contrib/mhchem.js",
       isWebpack: true,
       replace: [[ /require\("katex"\)/g, "katex" ]]
-    }
+    },
+    {
+      file: "./src/external/katex/contrib/auto-render.js",
+      isWebpack: true,
+      replace: [[ /require\("katex"\)/g, "katex" ]]
+    },
+    {
+      file: "./src/external/katex/contrib/copy-tex.js",
+      isWebpack: true,
+      replace: [[ /require\("katex"\)/g, "katex" ]]
+    },
+    {
+      file: "./src/external/katex/contrib/render-a11y-string.js",
+      isWebpack: true,
+      replace: [[ /require\("katex"\)/g, "katex" ]]
+    },
   ],
   strings: [
     {
